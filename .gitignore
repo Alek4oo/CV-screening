@@ -1,0 +1,20 @@
+# Среда
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Node / frontend
+node_modules/
+build/
+dist/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store

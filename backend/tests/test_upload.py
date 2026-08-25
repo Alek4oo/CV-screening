@@ -1,6 +1,5 @@
 """Пълният поток през POST /candidates/upload."""
 
-import pytest
 from sqlalchemy import select
 
 from app.core.config import settings
@@ -8,6 +7,13 @@ from app.models import AuditAction, AuditLog, Candidate
 from app.ocr import Document, OcrEngineUnavailableError, UnreadableDocumentError
 
 PNG_HEADER = b"\x89PNG\r\n\x1a\n"
+
+TXT_CV = (
+    "Ivan Petrov\n"
+    "ivan.petrov@example.com\n\n"
+    "Skills\n"
+    "Python, FastAPI, PostgreSQL\n"
+)
 
 
 def upload(client, content: bytes, filename="cv.pdf", media_type="application/pdf"):
@@ -62,16 +68,60 @@ class TestHappyPath:
         assert entry.payload_out["engine"] == "tesseract"
 
 
+class TestPlainTextUpload:
+    """TXT минава през същия поток, но без OCR — истинският адаптер стига."""
+
+    def test_txt_returns_201_with_parsed_profile(self, client):
+        response = upload(
+            client, TXT_CV.encode("utf-8"), filename="cv.txt", media_type="text/plain"
+        )
+        assert response.status_code == 201, response.text
+
+        candidate = response.json()["candidate"]
+        assert candidate["full_name"] == "Ivan Petrov"
+        assert candidate["email"] == "ivan.petrov@example.com"
+        assert "fastapi" in candidate["profile"]["skills"]
+
+    def test_txt_audit_log_records_media_type(self, client, session):
+        upload(client, TXT_CV.encode("utf-8"), filename="cv.txt", media_type="text/plain")
+
+        entry = session.scalars(select(AuditLog)).one()
+        assert entry.payload_in["media_type"] == "text/plain"
+
+    def test_cyrillic_txt_in_cp1251_is_read(self, client):
+        cv = "Иван Петров\nivan.petrov@example.com\n\nУмения\nPython, FastAPI\n"
+        response = upload(
+            client, cv.encode("cp1251"), filename="cv.txt", media_type="text/plain"
+        )
+        assert response.status_code == 201, response.text
+        assert response.json()["candidate"]["full_name"] == "Иван Петров"
+
+
 class TestValidation:
     def test_rejects_unsupported_type(self, client):
-        response = upload(client, b"hello", filename="cv.txt", media_type="text/plain")
+        # Изображенията вече не са четими — приемаме само PDF и TXT.
+        response = upload(
+            client, PNG_HEADER + b"\x00" * 64, filename="cv.png", media_type="image/png"
+        )
         assert response.status_code == 415
+        assert "application/pdf" in response.json()["detail"]
 
     def test_rejects_content_type_mismatch(self, client):
         # PNG байтове, обявени за PDF — вярваме на байтовете.
         response = upload(client, PNG_HEADER + b"\x00" * 64)
         assert response.status_code == 415
         assert "image/png" in response.json()["detail"]
+
+    def test_rejects_text_declared_as_pdf(self, client):
+        response = upload(client, TXT_CV.encode("utf-8"))
+        assert response.status_code == 415
+        assert "text/plain" in response.json()["detail"]
+
+    def test_rejects_binary_declared_as_text(self, client):
+        response = upload(
+            client, b"MZ\x90\x00\x03binary", filename="cv.txt", media_type="text/plain"
+        )
+        assert response.status_code == 415
 
     def test_rejects_unrecognised_content(self, client):
         response = upload(client, b"MZ\x90\x00 definitely not a pdf")
@@ -161,27 +211,3 @@ class TestSwappableAdapterEndToEnd:
         assert body["extraction"]["engine"] == "stub"
         assert body["candidate"]["full_name"] == "Petar Georgiev"
         assert "kubernetes" in body["candidate"]["profile"]["skills"]
-
-
-@pytest.mark.parametrize("media_type", ["image/png", "image/jpeg", "image/tiff"])
-def test_image_types_are_accepted_by_validation(use_extractor, media_type):
-    """Валидацията пуска изображения; OCR-ът е подменен, за да не иска Tesseract."""
-
-    class StubExtractor:
-        name = "stub"
-
-        def extract_text(self, file: Document) -> str:
-            return "Ana Dimitrova\nSkills\nPython\n"
-
-    headers = {
-        "image/png": PNG_HEADER,
-        "image/jpeg": b"\xff\xd8\xff\xe0",
-        "image/tiff": b"II*\x00",
-    }
-    response = upload(
-        use_extractor(StubExtractor()),
-        headers[media_type] + b"\x00" * 128,
-        filename=f"cv.{media_type.split('/')[1]}",
-        media_type=media_type,
-    )
-    assert response.status_code == 201

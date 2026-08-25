@@ -4,12 +4,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 # tesseract-ocr-bul / -eng са езиковите пакети зад OCR_LANGUAGES=bul+eng.
-# poppler-utils трябва на pdf2image за растеризиране на сканирани PDF-и.
+# Растеризирането на сканирани PDF-и е на pypdfium2 (колело от PyPI) — системен
+# poppler не трябва, затова средата е еднаква тук, на Windows и в CI.
 RUN apt-get update && apt-get install --no-install-recommends -y \
         tesseract-ocr \
         tesseract-ocr-bul \
         tesseract-ocr-eng \
-        poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

@@ -38,10 +38,10 @@ _READ_CHUNK = 64 * 1024
     "/upload",
     status_code=status.HTTP_201_CREATED,
     response_model=CandidateUploadResponse,
-    summary="Качва CV (PDF/изображение) и създава кандидат",
+    summary="Качва CV (PDF или TXT) и създава кандидат",
 )
 async def upload_candidate(
-    file: UploadFile = File(..., description="CV във формат PDF, PNG, JPEG или TIFF"),
+    file: UploadFile = File(..., description="CV във формат PDF или обикновен текст"),
     session: Session = Depends(get_session),
     extractor: TextExtractor = Depends(get_text_extractor),
 ) -> CandidateUploadResponse:
@@ -160,7 +160,7 @@ def _validate_type(file: UploadFile, content: bytes) -> str:
     if sniffed is None:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Съдържанието на файла не е разпознато като PDF или изображение.",
+            detail="Съдържанието на файла не е разпознато като PDF или текст.",
         )
     if sniffed != declared:
         # Разминаването е или объркан клиент, или преименуван файл. И в двата

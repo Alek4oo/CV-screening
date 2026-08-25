@@ -1,8 +1,11 @@
 """Tesseract реализация на TextExtractor (bul+eng).
 
-Два пътя през един интерфейс: PDF с текстов слой се чете директно (по-точно и
-многократно по-бързо от OCR), а сканиран PDF или изображение минава през
-Tesseract. Прагът MIN_TEXT_LAYER_CHARS решава кой път е кой.
+Три пътя през един интерфейс: обикновеният текст се декодира, PDF с текстов слой
+се чете директно (по-точно и многократно по-бързо от OCR), а сканиран PDF минава
+през Tesseract. Прагът MIN_TEXT_LAYER_CHARS решава кой от двата PDF пътя е.
+
+Растеризирането е през pypdfium2 — колело от PyPI, без системен двоичен файл.
+Затова средата е еднаква на Windows, в контейнера и в CI.
 
 Тежките зависимости се внасят вътре в методите нарочно — модулът трябва да е
 importable на машина без Tesseract, за да работят тестовете с друг адаптер.
@@ -23,9 +26,17 @@ logger = logging.getLogger(__name__)
 # документ често носи няколко знака шум от воден знак или метаданни).
 MIN_TEXT_LAYER_CHARS = 40
 
+# PDF точката е 1/72 от инча — оттам се смята мащабът за исканите DPI.
+PDF_POINTS_PER_INCH = 72
+
+# Редът е важен: utf-8 отсява себе си сам, а cp1251 е това, което Windows
+# редакторите у нас още произвеждат. Латиница-1 нарочно липсва — тя приема всичко
+# и би превърнала кирилицата в безшумни глупости.
+TEXT_ENCODINGS: tuple[str, ...] = ("utf-8-sig", "cp1251")
+
 
 class TesseractExtractor:
-    """Извлича текст през pypdf (текстов слой) и pytesseract (OCR)."""
+    """Извлича текст от TXT (директно), PDF (pypdf) и сканиран PDF (pytesseract)."""
 
     name = "tesseract"
 
@@ -42,6 +53,9 @@ class TesseractExtractor:
     # --- публичен интерфейс ---
 
     def extract_text(self, file: Document) -> str:
+        if file.media_type == "text/plain":
+            return self._plain_text(file.content)
+
         if file.media_type == "application/pdf":
             text = self._pdf_text_layer(file.content)
             if len(text.strip()) >= MIN_TEXT_LAYER_CHARS:
@@ -50,12 +64,21 @@ class TesseractExtractor:
             logger.info("%s: няма текстов слой, минава през OCR", file.filename)
             return self._ocr_pdf(file.content)
 
-        if file.media_type.startswith("image/"):
-            return self._ocr_image(file.content)
-
-        raise UnreadableDocumentError(f"Неподдържан тип за OCR: {file.media_type}")
+        raise UnreadableDocumentError(f"Неподдържан тип за извличане: {file.media_type}")
 
     # --- реализация ---
+
+    def _plain_text(self, content: bytes) -> str:
+        """TXT не изисква нито OCR, нито двигател — само правилното декодиране."""
+        for encoding in TEXT_ENCODINGS:
+            try:
+                return content.decode(encoding)
+            except UnicodeDecodeError:
+                continue
+
+        raise UnreadableDocumentError(
+            f"Текстът не се декодира с нито едно от {', '.join(TEXT_ENCODINGS)}"
+        )
 
     def _pdf_text_layer(self, content: bytes) -> str:
         try:
@@ -75,40 +98,37 @@ class TesseractExtractor:
         return "\n".join(pages)
 
     def _ocr_pdf(self, content: bytes) -> str:
+        """Растеризира страница по страница и подава всяка на Tesseract."""
         try:
-            from pdf2image import convert_from_bytes
+            import pypdfium2 as pdfium
         except ImportError as exc:  # pragma: no cover - липсваща зависимост
-            raise OcrEngineUnavailableError("pdf2image не е инсталиран") from exc
+            raise OcrEngineUnavailableError("pypdfium2 не е инсталиран") from exc
 
         try:
-            images = convert_from_bytes(content, dpi=self.dpi)
-        except Exception as exc:
-            # pdf2image бърка липсващия poppler с невалиден PDF — разделяме ги по
-            # името на изключението, защото типовете идват от вътрешен модул.
-            if "poppler" in str(exc).lower() or "Info" in type(exc).__name__:
-                raise OcrEngineUnavailableError(f"poppler липсва или е счупен: {exc}") from exc
-            raise UnreadableDocumentError(f"PDF-ът не може да се растеризира: {exc}") from exc
-
-        if not images:
-            raise UnreadableDocumentError("PDF без страници за OCR")
-
-        return "\n".join(self._run_tesseract(image) for image in images)
-
-    def _ocr_image(self, content: bytes) -> str:
-        try:
-            from PIL import Image, UnidentifiedImageError
-        except ImportError as exc:  # pragma: no cover - липсваща зависимост
-            raise OcrEngineUnavailableError("Pillow не е инсталиран") from exc
+            document = pdfium.PdfDocument(content)
+        except pdfium.PdfiumError as exc:
+            raise UnreadableDocumentError(f"PDF-ът не може да се отвори: {exc}") from exc
 
         try:
-            image = Image.open(io.BytesIO(content))
-            image.load()
-        except UnidentifiedImageError as exc:
-            raise UnreadableDocumentError("Файлът не е разпознаваемо изображение") from exc
-        except Exception as exc:
-            raise UnreadableDocumentError(f"Повредено изображение: {exc}") from exc
+            if len(document) == 0:
+                raise UnreadableDocumentError("PDF без страници за OCR")
 
-        return self._run_tesseract(image)
+            scale = self.dpi / PDF_POINTS_PER_INCH
+            pages = []
+            for index in range(len(document)):
+                try:
+                    # Една страница в паметта наведнъж — 300 DPI изображенията са
+                    # десетки мегабайти, а CV-тата не са едностранични по правило.
+                    image = document[index].render(scale=scale).to_pil()
+                except pdfium.PdfiumError as exc:
+                    raise UnreadableDocumentError(
+                        f"Страница {index + 1} не може да се растеризира: {exc}"
+                    ) from exc
+                pages.append(self._run_tesseract(image))
+        finally:
+            document.close()
+
+        return "\n".join(pages)
 
     def _run_tesseract(self, image) -> str:
         try:

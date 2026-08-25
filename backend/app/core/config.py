@@ -19,9 +19,7 @@ class Settings(BaseSettings):
     max_upload_bytes: int = 10 * 1024 * 1024
     allowed_upload_types: tuple[str, ...] = (
         "application/pdf",
-        "image/png",
-        "image/jpeg",
-        "image/tiff",
+        "text/plain",
     )
 
     # --- OCR ---

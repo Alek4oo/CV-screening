@@ -1,9 +1,11 @@
-"""OCR адаптерът: текстов слой, грешки и сменяемост."""
+"""OCR адаптерът: текстов слой, обикновен текст, грешки и сменяемост."""
 
+import io
 import shutil
 
 import pytest
 
+from app.core.config import settings
 from app.ocr import Document, TextExtractor, UnreadableDocumentError, sniff_media_type
 from app.ocr.tesseract import TesseractExtractor
 
@@ -25,15 +27,37 @@ class TestTextLayer:
             TesseractExtractor().extract_text(make_document(broken))
 
     def test_unsupported_media_type_raises_unreadable(self):
+        # Изображенията отпаднаха — четими са само PDF и TXT.
         with pytest.raises(UnreadableDocumentError):
             TesseractExtractor().extract_text(
-                make_document(b"plain text", media_type="text/plain")
+                make_document(b"\x89PNG\r\n\x1a\n", media_type="image/png")
             )
 
-    def test_garbage_image_raises_unreadable(self):
+
+class TestPlainText:
+    def test_reads_utf8_text(self):
+        text = TesseractExtractor().extract_text(
+            make_document("Ivan Petrov\nPython".encode("utf-8"), media_type="text/plain")
+        )
+        assert text == "Ivan Petrov\nPython"
+
+    def test_strips_utf8_bom(self):
+        text = TesseractExtractor().extract_text(
+            make_document("Иван Петров".encode("utf-8-sig"), media_type="text/plain")
+        )
+        assert text == "Иван Петров"
+
+    def test_reads_cyrillic_in_cp1251(self):
+        # Windows редакторите у нас още произвеждат cp1251.
+        text = TesseractExtractor().extract_text(
+            make_document("Умения: Python".encode("cp1251"), media_type="text/plain")
+        )
+        assert text == "Умения: Python"
+
+    def test_undecodable_bytes_raise_unreadable(self):
         with pytest.raises(UnreadableDocumentError):
             TesseractExtractor().extract_text(
-                make_document(b"not an image", media_type="image/png")
+                make_document(b"\x98\x98\x98", media_type="text/plain")
             )
 
 
@@ -45,12 +69,19 @@ class TestSniffing:
             (b"\x89PNG\r\n\x1a\n...", "image/png"),
             (b"\xff\xd8\xff\xe0...", "image/jpeg"),
             (b"II*\x00...", "image/tiff"),
+            (b"Ivan Petrov\nPython, FastAPI\n", "text/plain"),
+            ("Иван Петров".encode("utf-8"), "text/plain"),
+            ("Иван Петров".encode("cp1251"), "text/plain"),
             (b"MZ\x90\x00", None),
             (b"", None),
         ],
     )
     def test_sniff(self, content, expected):
         assert sniff_media_type(content) == expected
+
+    def test_binary_beyond_the_sample_is_still_accepted_as_text(self):
+        """Гледаме само началото — това е цената на евристиката, не пропуск."""
+        assert sniff_media_type(b"a" * 9000 + b"\x00") == "text/plain"
 
 
 class TestSwappability:
@@ -73,22 +104,34 @@ class TestSwappability:
 
 
 @pytest.mark.skipif(
-    shutil.which("tesseract") is None,
-    reason="Tesseract не е инсталиран на тази машина",
+    shutil.which("tesseract") is None and not settings.tesseract_cmd,
+    reason="Tesseract не е нито на PATH, нито посочен през TESSERACT_CMD",
 )
 class TestRealOcr:
-    """Пуска се само там, където бинарникът го има — в образа го има."""
+    """Пуска се само там, където двигателят го има — в образа го има.
 
-    def test_ocr_reads_rendered_text(self):
+    На Windows Tesseract рядко е на PATH, затова уважаваме и TESSERACT_CMD.
+    """
+
+    def test_ocr_reads_scanned_pdf(self):
         from PIL import Image, ImageDraw
 
         image = Image.new("RGB", (700, 140), "white")
         ImageDraw.Draw(image).text((12, 40), "Python Developer", fill="black")
 
-        buffer = __import__("io").BytesIO()
-        image.save(buffer, format="PNG")
+        buffer = io.BytesIO()
+        # PDF без текстов слой — точно случаят, заради който OCR-ът съществува.
+        image.save(buffer, format="PDF")
 
-        text = TesseractExtractor().extract_text(
-            Document(filename="cv.png", media_type="image/png", content=buffer.getvalue())
+        extractor = TesseractExtractor(
+            languages=settings.ocr_languages,
+            tesseract_cmd=settings.tesseract_cmd,
+        )
+        text = extractor.extract_text(
+            Document(
+                filename="scan.pdf",
+                media_type="application/pdf",
+                content=buffer.getvalue(),
+            )
         )
         assert "Python" in text

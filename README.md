@@ -6,7 +6,7 @@ AI CV Screening по EU AI Act
 
 Функционалности
 Парсване и класиране на CV-та спрямо изисквания на роля.
-Базов OCR за сканирани CV-та (PDF/изображение).
+Качване на CV в PDF или TXT, с базов OCR за сканирани PDF-и.
 Обяснимо класиране — кои умения/фактори тежат и защо.
 Изглед за рекрутер с преглед и ръчно решение (никакво авто-отхвърляне).
 Bias-одит: сравнение на класирането със и без чувствителни признаци (пол/възраст/произход).
@@ -90,6 +90,26 @@ docker-compose up --build
 
 Frontend: http://localhost:3000
 API + документация: http://localhost:8000/docs
+
+Локално стартиране (без Docker)
+
+Изисква Python 3.11 и Tesseract с езиковите пакети bul+eng. Растеризирането на сканирани PDF-и е на pypdfium2 (колело от PyPI) — системен poppler не трябва.
+
+bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+
+Настройките идват от backend/.env (виж .env.example). За бърз старт без Postgres:
+
+DATABASE_URL=sqlite:///./dev.db
+TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe # само ако не е на PATH
+
+Качване на CV — приемат се PDF (с текстов слой или сканиран) и TXT:
+
+bash
+curl -F "file=@tests/data/sample_cv.pdf;type=application/pdf" http://127.0.0.1:8000/candidates/upload
+
 Seed данни
 
 При първо стартиране базата се пълни автоматично със синтетични кандидати и роли:

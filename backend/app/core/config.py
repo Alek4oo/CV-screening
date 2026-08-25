@@ -12,5 +12,26 @@ class Settings(BaseSettings):
     # Пълен SQLAlchemy URL. По подразбиране сочи към db услугата от docker-compose.
     database_url: str = "postgresql+psycopg2://cvscreening:cvscreening@db:5432/cvscreening"
 
+    # Временно, докато няма миграции: създава таблиците при старт. Виж app.main.
+    auto_create_tables: bool = True
+
+    # --- Качване на документи ---
+    max_upload_bytes: int = 10 * 1024 * 1024
+    allowed_upload_types: tuple[str, ...] = (
+        "application/pdf",
+        "image/png",
+        "image/jpeg",
+        "image/tiff",
+    )
+
+    # --- OCR ---
+    # Ключ от регистъра в app.ocr. Смяната на реализация е смяна на тази стойност.
+    ocr_backend: str = "tesseract"
+    ocr_languages: str = "bul+eng"
+    # Път до бинарника, ако не е на PATH.
+    tesseract_cmd: str | None = None
+    # DPI при растеризиране на сканиран PDF преди OCR.
+    ocr_dpi: int = 300
+
 
 settings = Settings()

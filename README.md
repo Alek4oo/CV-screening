@@ -110,7 +110,26 @@ TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe # само ако н�
 bash
 curl -F "file=@tests/data/sample_cv.pdf;type=application/pdf" http://127.0.0.1:8000/candidates/upload
 
-Класиране за роля
+Роли, правила и класиране
+
+Ендпойнти:
+
+POST   /roles                    създава роля (чернова по подразбиране)
+GET    /roles?status=open        изброява роли, с limit/offset
+GET    /roles/{id}               една роля
+PATCH  /roles/{id}               частично обновяване
+DELETE /roles/{id}               само роля без класирания — иначе status=closed
+POST   /roles/{id}/rank          класира кандидатите
+
+POST   /rulesets                 нова версия правила, ражда се като чернова
+GET    /rulesets?status=active   изброява версиите
+GET    /rulesets/active          версията, която е в сила
+GET    /rulesets/{id}            една версия
+PATCH  /rulesets/{id}            само чернова
+POST   /rulesets/{id}/activate   активира и ретайрва предишната
+DELETE /rulesets/{id}            само чернова
+
+Версия, с която е взето решение, не се редактира и не се трие — промяна значи нова версия. Затова редакцията и триенето важат само за чернови, а активирането ретайрва предишната активна, за да е еднозначно коя е в сила. Ролята с класирания също не се трие; затваря се със status=closed.
 
 POST /roles/{id}/rank класира кандидатите по активната версия правила и връща скор + принос на всеки фактор. Ролята казва какво се иска, ruleset-ът — колко тежи:
 

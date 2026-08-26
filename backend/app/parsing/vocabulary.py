@@ -118,3 +118,63 @@ PRESENT_MARKERS: tuple[str, ...] = (
     "current",
     "now",
 )
+
+# Степените, подредени по ниво. Скорингът сравнява ранг с ранг, защото
+# "магистър" и "master" са едно и също изискване, написано на два езика.
+# "университет" нарочно липсва — то казва къде, не какво.
+DEGREE_RANKS: dict[str, int] = {
+    "средно образование": 1,
+    "гимназия": 1,
+    "high school": 1,
+    "специалист": 2,
+    "бакалавър": 3,
+    "bachelor": 3,
+    "bsc": 3,
+    "магистър": 4,
+    "master": 4,
+    "msc": 4,
+    "доктор": 5,
+    "phd": 5,
+}
+
+# Езиците идват от CV-то на езика на CV-то — ролята обаче ги иска еднакво.
+LANGUAGE_ALIASES: dict[str, tuple[str, ...]] = {
+    "bulgarian": ("bulgarian", "български", "българский"),
+    "english": ("english", "английски"),
+    "german": ("german", "немски", "deutsch"),
+    "french": ("french", "френски"),
+    "spanish": ("spanish", "испански"),
+    "russian": ("russian", "руски"),
+    "italian": ("italian", "италиански"),
+}
+
+_SKILL_TO_CANONICAL: dict[str, str] = {
+    alias: canonical for canonical, aliases in SKILL_ALIASES.items() for alias in aliases
+}
+
+_LANGUAGE_TO_CANONICAL: dict[str, str] = {
+    alias: canonical for canonical, aliases in LANGUAGE_ALIASES.items() for alias in aliases
+}
+
+
+def canonical_skill(name: str) -> str:
+    """Свежда изписване до канонично име: "Postgres" → "postgresql".
+
+    Непознатото се връща само нормализирано (малки букви, свити интервали) —
+    речникът е плосък по замисъл и не бива тихо да губи домейн технологии.
+    """
+    cleaned = " ".join(name.lower().split())
+    return _SKILL_TO_CANONICAL.get(cleaned, cleaned)
+
+
+def canonical_language(name: str) -> str:
+    """Свежда език до канонично име: "Английски" → "english"."""
+    cleaned = " ".join(name.lower().split())
+    return _LANGUAGE_TO_CANONICAL.get(cleaned, cleaned)
+
+
+def degree_rank(degree: str | None) -> int:
+    """Ранг на степента. 0 значи непозната или липсваща степен."""
+    if not degree:
+        return 0
+    return DEGREE_RANKS.get(" ".join(degree.lower().split()), 0)

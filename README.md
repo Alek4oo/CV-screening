@@ -110,12 +110,51 @@ TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe # само ако н�
 bash
 curl -F "file=@tests/data/sample_cv.pdf;type=application/pdf" http://127.0.0.1:8000/candidates/upload
 
-Seed данни
+Класиране за роля
 
-При първо стартиране базата се пълни автоматично със синтетични кандидати и роли:
+POST /roles/{id}/rank класира кандидатите по активната версия правила и връща скор + принос на всеки фактор. Ролята казва какво се иска, ruleset-ът — колко тежи:
+
+role.requirements:
+{
+  "required_skills": [{"name": "python", "weight": 3}, "postgresql"],
+  "preferred_skills": ["docker"],
+  "min_years_experience": 4,
+  "min_degree": "bachelor",
+  "languages": ["english"]
+}
+
+ruleset.definition:
+{
+  "weights": {
+    "required_skills": 0.50,
+    "preferred_skills": 0.15,
+    "experience": 0.25,
+    "education": 0.10,
+    "languages": 0.00
+  }
+}
+
+Скорът е 100 × Σ(тежест × изпълнение) / Σ(тежест) по факторите, за които ролята има изискване. Изричните тежести са пълни — фактор, който не е изброен, тежи нула. Класирането е в режим masked и сочи към ruleset_id; непокритият минимум вдига флаг meets_minimum=false, но не отхвърля никого.
 
 bash
-docker-compose exec backend python -m app.seed
+curl -X POST http://127.0.0.1:8000/roles/<role-id>/rank
+curl -X POST http://127.0.0.1:8000/roles/<role-id>/rank -H "Content-Type: application/json" -d '{"ruleset_version": "2026.08.1"}'
+
+Seed данни
+
+Синтетичен набор за разработка и демо: една активна версия правила, две роли и шест кандидата. Пуска се ръчно и е идемпотентен — повторното изпълнение обновява, вместо да дублира (ключът е external_ref):
+
+bash
+docker-compose exec backend python -m app.seed   # в контейнер
+python -m app.seed                               # локално, от backend/
+
+Кандидатите се раждат от суров CV текст през същия парсер като продукционния път, а защитените признаци (пол, възрастова група, произход) се попълват само тук — те не идват от CV-то и служат единствено на bias-одита. Всички данни са измислени.
+
+След seed класирането е на един curl разстояние:
+
+bash
+curl -X POST http://127.0.0.1:8000/roles/<role-id>/rank
+
 Тестове
 bash
 docker-compose exec backend pytest

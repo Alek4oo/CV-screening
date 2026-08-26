@@ -60,6 +60,25 @@ def client(engine, monkeypatch):
 
 
 @pytest.fixture
+def seeded_ruleset(session):
+    """Активна версия правила — минимумът, без който класирането отказва."""
+    from datetime import datetime, timezone
+
+    from app.models import Ruleset, RulesetStatus
+
+    ruleset = Ruleset(
+        version="2026.08.1",
+        name="Базови правила",
+        definition={"weights": {"required_skills": 1}},
+        status=RulesetStatus.ACTIVE,
+        activated_at=datetime(2026, 8, 1, tzinfo=timezone.utc),
+    )
+    session.add(ruleset)
+    session.commit()
+    return ruleset
+
+
+@pytest.fixture
 def use_extractor(client):
     """Подменя OCR адаптера — доказателството, че е сменяем."""
 

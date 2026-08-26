@@ -22,6 +22,10 @@ class Settings(BaseSettings):
         "text/plain",
     )
 
+    # --- Скоринг ---
+    # Ключ от регистъра в app.scoring. Тежестите идват от ruleset-а, не оттук.
+    scoring_backend: str = "rule_based"
+
     # --- OCR ---
     # Ключ от регистъра в app.ocr. Смяната на реализация е смяна на тази стойност.
     ocr_backend: str = "tesseract"

@@ -7,6 +7,10 @@ PRD-то иска вход, изход, версия на правилата и 
 Забележка: ORM-ът не може да наложи append-only сам по себе си. Истинската
 гаранция е на ниво база — REVOKE UPDATE/DELETE за ролята на приложението или
 BEFORE UPDATE/DELETE тригер. Идва с миграциите.
+
+Второ предупреждение за същия момент: добавена стойност в AuditAction стига до
+празна база през create_all, но не и до вече създаден Postgres ENUM тип. Там
+трябва ALTER TYPE audit_action ADD VALUE — първата работа на Alembic.
 """
 
 import enum
@@ -26,7 +30,11 @@ class AuditAction(str, enum.Enum):
     PROFILE_PARSED = "profile_parsed"
     CANDIDATE_SCORED = "candidate_scored"
     DECISION_RECORDED = "decision_recorded"
+    RULESET_CREATED = "ruleset_created"
     RULESET_ACTIVATED = "ruleset_activated"
+    RULESET_RETIRED = "ruleset_retired"
+    ROLE_CREATED = "role_created"
+    ROLE_UPDATED = "role_updated"
     BIAS_AUDIT_RUN = "bias_audit_run"
 
 

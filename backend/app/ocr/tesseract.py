@@ -59,12 +59,12 @@ class TesseractExtractor:
         if file.media_type == "application/pdf":
             text = self._pdf_text_layer(file.content)
             if len(text.strip()) >= MIN_TEXT_LAYER_CHARS:
-                logger.info("%s: текстов слой, %d знака", file.filename, len(text))
+                logger.info("%s: text layer, %d characters", file.filename, len(text))
                 return text
-            logger.info("%s: няма текстов слой, минава през OCR", file.filename)
+            logger.info("%s: no text layer, going through OCR", file.filename)
             return self._ocr_pdf(file.content)
 
-        raise UnreadableDocumentError(f"Неподдържан тип за извличане: {file.media_type}")
+        raise UnreadableDocumentError(f"Unsupported type for extraction: {file.media_type}")
 
     # --- реализация ---
 
@@ -77,23 +77,23 @@ class TesseractExtractor:
                 continue
 
         raise UnreadableDocumentError(
-            f"Текстът не се декодира с нито едно от {', '.join(TEXT_ENCODINGS)}"
+            f"The text decodes with none of {', '.join(TEXT_ENCODINGS)}"
         )
 
     def _pdf_text_layer(self, content: bytes) -> str:
         try:
             from pypdf import PdfReader
         except ImportError as exc:  # pragma: no cover - липсваща зависимост
-            raise OcrEngineUnavailableError("pypdf не е инсталиран") from exc
+            raise OcrEngineUnavailableError("pypdf is not installed") from exc
 
         try:
             reader = PdfReader(io.BytesIO(content))
             pages = [page.extract_text() or "" for page in reader.pages]
         except Exception as exc:
-            raise UnreadableDocumentError(f"Повреден PDF: {exc}") from exc
+            raise UnreadableDocumentError(f"Corrupt PDF: {exc}") from exc
 
         if not pages:
-            raise UnreadableDocumentError("PDF без страници")
+            raise UnreadableDocumentError("PDF with no pages")
 
         return "\n".join(pages)
 
@@ -102,16 +102,16 @@ class TesseractExtractor:
         try:
             import pypdfium2 as pdfium
         except ImportError as exc:  # pragma: no cover - липсваща зависимост
-            raise OcrEngineUnavailableError("pypdfium2 не е инсталиран") from exc
+            raise OcrEngineUnavailableError("pypdfium2 is not installed") from exc
 
         try:
             document = pdfium.PdfDocument(content)
         except pdfium.PdfiumError as exc:
-            raise UnreadableDocumentError(f"PDF-ът не може да се отвори: {exc}") from exc
+            raise UnreadableDocumentError(f"The PDF cannot be opened: {exc}") from exc
 
         try:
             if len(document) == 0:
-                raise UnreadableDocumentError("PDF без страници за OCR")
+                raise UnreadableDocumentError("PDF with no pages to OCR")
 
             scale = self.dpi / PDF_POINTS_PER_INCH
             pages = []
@@ -122,7 +122,7 @@ class TesseractExtractor:
                     image = document[index].render(scale=scale).to_pil()
                 except pdfium.PdfiumError as exc:
                     raise UnreadableDocumentError(
-                        f"Страница {index + 1} не може да се растеризира: {exc}"
+                        f"Page {index + 1} cannot be rasterised: {exc}"
                     ) from exc
                 pages.append(self._run_tesseract(image))
         finally:
@@ -134,7 +134,7 @@ class TesseractExtractor:
         try:
             import pytesseract
         except ImportError as exc:  # pragma: no cover - липсваща зависимост
-            raise OcrEngineUnavailableError("pytesseract не е инсталиран") from exc
+            raise OcrEngineUnavailableError("pytesseract is not installed") from exc
 
         if self.tesseract_cmd:
             pytesseract.pytesseract.tesseract_cmd = self.tesseract_cmd
@@ -142,7 +142,7 @@ class TesseractExtractor:
         try:
             return pytesseract.image_to_string(image, lang=self.languages)
         except pytesseract.TesseractNotFoundError as exc:
-            raise OcrEngineUnavailableError("Tesseract не е намерен на PATH") from exc
+            raise OcrEngineUnavailableError("Tesseract was not found on PATH") from exc
         except pytesseract.TesseractError as exc:
             # Най-честият случай тук е липсващ езиков пакет (bul).
-            raise OcrEngineUnavailableError(f"Tesseract върна грешка: {exc}") from exc
+            raise OcrEngineUnavailableError(f"Tesseract returned an error: {exc}") from exc

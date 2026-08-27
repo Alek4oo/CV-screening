@@ -53,6 +53,6 @@ def get_text_extractor() -> TextExtractor:
     except KeyError:
         known = ", ".join(sorted(_BACKENDS))
         raise OcrEngineUnavailableError(
-            f"Непознат OCR_BACKEND {settings.ocr_backend!r}. Налични: {known}"
+            f"Unknown OCR_BACKEND {settings.ocr_backend!r}. Available: {known}"
         ) from None
     return factory()

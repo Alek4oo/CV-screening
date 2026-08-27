@@ -150,7 +150,7 @@ class RuleBasedScorer:
 def _required_skills(facts: CandidateFacts, required: tuple[WeightedSkill, ...]) -> _RawFactor | None:
     if not required:
         return None
-    return _skill_factor("required_skills", facts, required, "задължителни")
+    return _skill_factor("required_skills", facts, required, "required")
 
 
 def _preferred_skills(
@@ -158,7 +158,7 @@ def _preferred_skills(
 ) -> _RawFactor | None:
     if not preferred:
         return None
-    return _skill_factor("preferred_skills", facts, preferred, "предпочитани")
+    return _skill_factor("preferred_skills", facts, preferred, "preferred")
 
 
 def _skill_factor(
@@ -177,8 +177,8 @@ def _skill_factor(
         matched=matched,
         missing=missing,
         detail=(
-            f"Покрити {len(matched)} от {len(wanted)} {label} умения "
-            f"({subscore:.0%} по тежест)."
+            f"{len(matched)} of {len(wanted)} {label} skills matched "
+            f"({subscore:.0%} by weight)."
         ),
     )
 
@@ -192,9 +192,9 @@ def _experience(facts: CandidateFacts, min_years: float) -> _RawFactor | None:
     return _RawFactor(
         name="experience",
         subscore=subscore,
-        matched=(f"{years:g} г.",) if years else (),
-        missing=() if years >= min_years else (f"липсват {min_years - years:g} г.",),
-        detail=f"{years:g} години опит при искани {min_years:g}.",
+        matched=(f"{years:g} yrs",) if years else (),
+        missing=() if years >= min_years else (f"{min_years - years:g} yrs short",),
+        detail=f"{years:g} years of experience against {min_years:g} required.",
     )
 
 
@@ -211,8 +211,8 @@ def _education(facts: CandidateFacts, min_degree: str | None) -> _RawFactor | No
         matched=(facts.degree,) if facts.degree else (),
         missing=() if facts.degree_rank >= required_rank else (min_degree,),
         detail=(
-            f"Степен {facts.degree or 'няма разпозната'} (ранг {facts.degree_rank}) "
-            f"при искана {min_degree} (ранг {required_rank})."
+            f"Degree {facts.degree or 'none recognised'} (rank {facts.degree_rank}) "
+            f"against {min_degree} required (rank {required_rank})."
         ),
     )
 
@@ -228,7 +228,7 @@ def _languages(facts: CandidateFacts, wanted: tuple[str, ...]) -> _RawFactor | N
         subscore=len(matched) / len(wanted),
         matched=matched,
         missing=missing,
-        detail=f"Покрити {len(matched)} от {len(wanted)} езика.",
+        detail=f"{len(matched)} of {len(wanted)} languages matched.",
     )
 
 

@@ -263,7 +263,7 @@ class TestRefusals:
     def test_no_active_ruleset_is_a_409(self, client, session, role, candidates):
         response = rank(client, role.id)
         assert response.status_code == 409
-        assert "активна версия правила" in response.json()["detail"]
+        assert "No active ruleset" in response.json()["detail"]
 
     def test_unusable_ruleset_definition_is_a_409(self, client, session, role, candidates):
         session.add(
@@ -288,7 +288,7 @@ class TestRefusals:
 
         response = rank(client, broken.id)
         assert response.status_code == 409
-        assert "неизползваеми" in response.json()["detail"]
+        assert "unusable" in response.json()["detail"]
 
     def test_nothing_is_persisted_when_the_rules_are_unusable(
         self, client, session, ruleset, candidates

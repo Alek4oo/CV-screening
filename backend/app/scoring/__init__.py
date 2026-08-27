@@ -76,7 +76,7 @@ def build_scorer(ruleset: VersionedRules) -> Scorer:
     except KeyError:
         known = ", ".join(sorted(_BACKENDS))
         raise ScoringEngineUnavailableError(
-            f"Непознат SCORING_BACKEND {settings.scoring_backend!r}. Налични: {known}"
+            f"Unknown SCORING_BACKEND {settings.scoring_backend!r}. Available: {known}"
         ) from None
 
     return factory(rules)

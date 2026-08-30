@@ -39,7 +39,7 @@ class TestCreate:
         create(client)
         response = create(client)
         assert response.status_code == 409
-        assert "неизменими" in response.json()["detail"]
+        assert "immutable" in response.json()["detail"]
 
     def test_writes_an_audit_entry(self, client, session):
         create(client)
@@ -153,7 +153,7 @@ class TestImmutability:
 
         response = client.patch(f"/rulesets/{ruleset_id}", json={"notes": "късна редакция"})
         assert response.status_code == 409
-        assert "нова версия" in response.json()["detail"]
+        assert "new version" in response.json()["detail"]
 
     def test_active_version_cannot_be_deleted(self, client, session):
         ruleset_id = create(client).json()["id"]

@@ -41,22 +41,22 @@ class ScoringRules:
     ) -> "ScoringRules":
         definition = definition or {}
         if not isinstance(definition, dict):
-            raise InvalidRulesError("Дефиницията на правилата трябва да е обект.")
+            raise InvalidRulesError("The ruleset definition must be an object.")
 
         if "weights" not in definition:
             return cls(weights=dict(DEFAULT_WEIGHTS), version=version)
 
         raw = definition["weights"]
         if not isinstance(raw, dict):
-            raise InvalidRulesError("'weights' трябва да е обект фактор → тежест.")
+            raise InvalidRulesError("'weights' must be an object of factor -> weight.")
 
         unknown = sorted(set(raw) - set(FACTOR_NAMES))
         if unknown:
             # Тихото игнориране би значело, че тежест, която някой е записал в
             # правилата, не влияе на нищо — най-скъпият вид мълчалива грешка.
             raise InvalidRulesError(
-                f"Непознати фактори в 'weights': {', '.join(unknown)}. "
-                f"Познати: {', '.join(FACTOR_NAMES)}."
+                f"Unknown factors in 'weights': {', '.join(unknown)}. "
+                f"Known: {', '.join(FACTOR_NAMES)}."
             )
 
         # Изричните тежести са пълни: каквото не е написано, тежи нула. Иначе
@@ -66,7 +66,7 @@ class ScoringRules:
             weights[name] = _positive_number(value, f"weights.{name}")
 
         if sum(weights.values()) <= 0:
-            raise InvalidRulesError("Поне един фактор трябва да има тежест > 0.")
+            raise InvalidRulesError("At least one factor must carry a weight > 0.")
 
         return cls(weights=weights, version=version)
 
@@ -107,7 +107,7 @@ class RoleRequirements:
     def from_json(cls, requirements: dict[str, Any] | None) -> "RoleRequirements":
         requirements = requirements or {}
         if not isinstance(requirements, dict):
-            raise InvalidRulesError("Изискванията на ролята трябва да са обект.")
+            raise InvalidRulesError("Role requirements must be an object.")
 
         return cls(
             required_skills=_skills(requirements.get("required_skills"), "required_skills"),
@@ -130,7 +130,7 @@ def _skills(raw: Any, field: str) -> tuple[WeightedSkill, ...]:
     if raw is None:
         return ()
     if not isinstance(raw, (list, tuple)):
-        raise InvalidRulesError(f"'{field}' трябва да е списък.")
+        raise InvalidRulesError(f"'{field}' must be a list.")
 
     skills: dict[str, WeightedSkill] = {}
     for index, item in enumerate(raw):
@@ -140,10 +140,10 @@ def _skills(raw: Any, field: str) -> tuple[WeightedSkill, ...]:
             name = item.get("name") or item.get("skill") or ""
             weight = _positive_number(item.get("weight", 1), f"{field}[{index}].weight")
         else:
-            raise InvalidRulesError(f"'{field}[{index}]' трябва да е низ или обект.")
+            raise InvalidRulesError(f"'{field}[{index}]' must be a string or an object.")
 
         if not isinstance(name, str) or not name.strip():
-            raise InvalidRulesError(f"'{field}[{index}]' няма име на умение.")
+            raise InvalidRulesError(f"'{field}[{index}]' has no skill name.")
 
         canonical = canonical_skill(name)
         # Повторено умение: печели по-високата тежест, вместо да го броим двойно.
@@ -152,7 +152,7 @@ def _skills(raw: Any, field: str) -> tuple[WeightedSkill, ...]:
             skills[canonical] = WeightedSkill(name=canonical, weight=weight)
 
     if any(skill.weight <= 0 for skill in skills.values()):
-        raise InvalidRulesError(f"Тежестите в '{field}' трябва да са > 0.")
+        raise InvalidRulesError(f"Weights in '{field}' must be > 0.")
 
     return tuple(skills.values())
 
@@ -161,15 +161,15 @@ def _degree(raw: Any) -> str | None:
     if raw is None or raw == "":
         return None
     if not isinstance(raw, str):
-        raise InvalidRulesError("'min_degree' трябва да е низ.")
+        raise InvalidRulesError("'min_degree' must be a string.")
 
     normalized = " ".join(raw.lower().split())
     if degree_rank(normalized) == 0:
         # Степен, която речникът не познава, не може да бъде сравнена с нищо —
         # по-добре отказ сега, отколкото фактор, който тихо дава нула на всички.
         raise InvalidRulesError(
-            f"Непозната степен 'min_degree'={raw!r}. "
-            f"Познати: {', '.join(sorted(DEGREE_RANKS))}."
+            f"Unknown degree 'min_degree'={raw!r}. "
+            f"Known: {', '.join(sorted(DEGREE_RANKS))}."
         )
     return normalized
 
@@ -178,17 +178,17 @@ def _string_list(raw: Any, field: str) -> tuple[str, ...]:
     if raw is None:
         return ()
     if not isinstance(raw, (list, tuple)):
-        raise InvalidRulesError(f"'{field}' трябва да е списък.")
+        raise InvalidRulesError(f"'{field}' must be a list.")
     for item in raw:
         if not isinstance(item, str):
-            raise InvalidRulesError(f"'{field}' приема само низове.")
+            raise InvalidRulesError(f"'{field}' accepts strings only.")
     return tuple(item for item in raw if item.strip())
 
 
 def _positive_number(value: Any, field: str) -> float:
     # bool е подтип на int в Python — тук е почти сигурно грешка в конфигурацията.
     if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise InvalidRulesError(f"'{field}' трябва да е число.")
+        raise InvalidRulesError(f"'{field}' must be a number.")
     if value < 0:
-        raise InvalidRulesError(f"'{field}' не може да е отрицателно.")
+        raise InvalidRulesError(f"'{field}' cannot be negative.")
     return float(value)

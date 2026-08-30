@@ -37,13 +37,13 @@ MAX_PAGE_SIZE = 200
     "",
     response_model=RulesetRead,
     status_code=status.HTTP_201_CREATED,
-    summary="Създава нова версия правила като чернова",
+    summary="Creates a new ruleset version as a draft",
 )
 def create_ruleset(payload: RulesetCreate, session: Session = Depends(get_session)) -> Ruleset:
     if _by_version(session, payload.version) is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Версия {payload.version!r} вече съществува. Правилата са неизменими.",
+            detail=f"Version {payload.version!r} already exists. Rulesets are immutable.",
         )
 
     ruleset = Ruleset(**payload.model_dump(), status=RulesetStatus.DRAFT)
@@ -66,7 +66,7 @@ def create_ruleset(payload: RulesetCreate, session: Session = Depends(get_sessio
     return ruleset
 
 
-@router.get("", response_model=list[RulesetRead], summary="Изброява версиите правила")
+@router.get("", response_model=list[RulesetRead], summary="Lists ruleset versions")
 def list_rulesets(
     session: Session = Depends(get_session),
     ruleset_status: RulesetStatus | None = Query(default=None, alias="status"),
@@ -79,7 +79,7 @@ def list_rulesets(
     return list(session.scalars(statement.limit(limit).offset(offset)))
 
 
-@router.get("/active", response_model=RulesetRead, summary="Версията, която е в сила")
+@router.get("/active", response_model=RulesetRead, summary="The ruleset currently in force")
 def get_active_ruleset(session: Session = Depends(get_session)) -> Ruleset:
     ruleset = session.scalars(
         select(Ruleset)
@@ -89,12 +89,12 @@ def get_active_ruleset(session: Session = Depends(get_session)) -> Ruleset:
     if ruleset is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Няма активна версия правила.",
+            detail="No active ruleset.",
         )
     return ruleset
 
 
-@router.get("/{ruleset_id}", response_model=RulesetRead, summary="Връща една версия")
+@router.get("/{ruleset_id}", response_model=RulesetRead, summary="Returns one ruleset version")
 def get_ruleset(ruleset_id: UUID, session: Session = Depends(get_session)) -> Ruleset:
     return _require_ruleset(session, ruleset_id)
 
@@ -102,13 +102,13 @@ def get_ruleset(ruleset_id: UUID, session: Session = Depends(get_session)) -> Ru
 @router.patch(
     "/{ruleset_id}",
     response_model=RulesetRead,
-    summary="Редактира чернова (активирана версия не се пипа)",
+    summary="Edits a draft (an activated version is never touched)",
 )
 def update_ruleset(
     ruleset_id: UUID, payload: RulesetUpdate, session: Session = Depends(get_session)
 ) -> Ruleset:
     ruleset = _require_ruleset(session, ruleset_id)
-    _require_draft(ruleset, "редактира")
+    _require_draft(ruleset, "edited")
 
     changes = payload.model_dump(exclude_unset=True)
     for field, value in changes.items():
@@ -122,7 +122,7 @@ def update_ruleset(
 @router.post(
     "/{ruleset_id}/activate",
     response_model=RulesetRead,
-    summary="Активира версия и ретайрва предишната",
+    summary="Activates a version and retires the previous one",
 )
 def activate_ruleset(ruleset_id: UUID, session: Session = Depends(get_session)) -> Ruleset:
     ruleset = _require_ruleset(session, ruleset_id)
@@ -166,18 +166,18 @@ def activate_ruleset(ruleset_id: UUID, session: Session = Depends(get_session)) 
     )
     session.commit()
     session.refresh(ruleset)
-    logger.info("Версия правила %s е в сила", ruleset.version)
+    logger.info("Ruleset %s is now in force", ruleset.version)
     return ruleset
 
 
 @router.delete(
     "/{ruleset_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Трие чернова (активирана версия не се трие)",
+    summary="Deletes a draft (an activated version is never deleted)",
 )
 def delete_ruleset(ruleset_id: UUID, session: Session = Depends(get_session)) -> None:
     ruleset = _require_ruleset(session, ruleset_id)
-    _require_draft(ruleset, "трие")
+    _require_draft(ruleset, "deleted")
 
     session.delete(ruleset)
     session.commit()
@@ -188,7 +188,7 @@ def _require_ruleset(session: Session, ruleset_id: UUID) -> Ruleset:
     if ruleset is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Няма версия правила с id {ruleset_id}.",
+            detail=f"No ruleset with id {ruleset_id}.",
         )
     return ruleset
 
@@ -198,8 +198,8 @@ def _require_draft(ruleset: Ruleset, verb: str) -> None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
-                f"Версия {ruleset.version} е {ruleset.status.value} и не се {verb}. "
-                "Направете нова версия — правилата зад взетите решения не се променят."
+                f"Version {ruleset.version} is {ruleset.status.value} and cannot be {verb}. "
+                "Create a new version — the rules behind decisions already taken do not change."
             ),
         )
 

@@ -15,6 +15,16 @@ class Settings(BaseSettings):
     # Временно, докато няма миграции: създава таблиците при старт. Виж app.main.
     auto_create_tables: bool = True
 
+    # --- Frontend ---
+    # Произходите, от които React изгледът има право да вика API-то. Дев
+    # сървърът на Vite и статичният билд от docker-compose.
+    cors_origins: tuple[str, ...] = (
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    )
+
     # --- Качване на документи ---
     max_upload_bytes: int = 10 * 1024 * 1024
     allowed_upload_types: tuple[str, ...] = (

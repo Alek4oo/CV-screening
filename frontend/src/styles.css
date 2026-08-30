@@ -1,0 +1,1195 @@
+/* Един лист стилове без CSS фреймуорк — изгледът е малък, а зависимост, която
+   не носи нищо, се плаща при всяко ъпгрейдване. */
+
+:root {
+  /* --- основа и текст --- */
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --border: #e7e9ee;
+  --text: #1a1d21;
+  /* Второстепенен текст: обяснения, подзаглавия — още се чете като съдържание. */
+  --muted: #5b6472;
+  /* Приглушен: мета и hint-ове (№, „/ 100", формати, часове). Контрастът му
+     върху бяло е под прага за нормален текст, затова тук не влиза нищо, което
+     трябва да се прочете, за да се разбере екранът. */
+  --subtle: #97a0ae;
+
+  /* --- един акцент --- */
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-soft: #eff6ff;
+
+  /* --- семантика: само където цветът носи смисъл --- */
+  --advanced: #1e7e45;
+  --advanced-soft: #e7f6ec;
+  --rejected: #c0392b;
+  --rejected-soft: #fdecec;
+  --hold: #b7791f;
+  --hold-soft: #fdf3e0;
+  /* „За преглед" е неутрално състояние, не семантика — сиво, не цвят. */
+  --pending: #5b6472;
+  --pending-soft: #eff1f5;
+
+  /* Ширина на класацията вдясно. При по-тясно от това името и етикетът
+     „Meets minimum" се пренасят на два реда. */
+  --rail: 420px;
+
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.06);
+}
+
+/**
+ * Тъмен режим.
+ *
+ * Само токените се предефинират — всяко правило под тях чете оттук, затова
+ * няма втори лист и няма как двата режима да се разминат. Ролите се запазват:
+ * повърхността остава по-светла от фона, семантиката пази значението си, а
+ * контрастът на приглушения текст следва същото правило като в светлия режим —
+ * върху него не стои нищо, което трябва да се прочете.
+ *
+ * Следва системната настройка. Няма превключвател: такъв иска място, където да
+ * се помни изборът, а изгледът няма профил на потребител.
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101317;
+    --surface: #171b21;
+    --border: #262c35;
+    --text: #e6e8ec;
+    --muted: #a2abb9;
+    --subtle: #6d7784;
+
+    --accent: #60a5fa;
+    --accent-hover: #93c5fd;
+    --accent-soft: #172336;
+
+    --advanced: #5cc98d;
+    --advanced-soft: #14291d;
+    --rejected: #f08b80;
+    --rejected-soft: #2e1a18;
+    --hold: #e0a83c;
+    --hold-soft: #2c2314;
+    --pending: #a2abb9;
+    --pending-soft: #222831;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Плътните бутони искат тъмен текст върху светлия акцент, не бял. */
+  button.primary,
+  button.danger {
+    color: #10131a;
+  }
+
+  .modal-backdrop {
+    background: rgba(0, 0, 0, 0.6);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  line-height: 1.25;
+}
+
+/* --- каркас --- */
+
+.app-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.app-header .brand {
+  font-weight: 650;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.app-header .brand span {
+  display: block;
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.app-header .spacer {
+  flex: 1;
+}
+
+main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.page-head h1 {
+  font-size: 22px;
+}
+
+.page-head .subtitle {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.breadcrumb {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+.card > h2 {
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.card > .card-note {
+  color: var(--muted);
+  font-size: 12.5px;
+  margin: 0 0 14px;
+}
+
+.grid-two {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .grid-two {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- формуляри --- */
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 9px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--accent-soft);
+  border-color: var(--accent);
+}
+
+textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+}
+
+label {
+  font-size: 12.5px;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 4px;
+}
+
+button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 7px;
+  padding: 7px 13px;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+button.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  color: #fff;
+}
+
+/* --- значки и чипове --- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12.5px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.badge.pending {
+  background: var(--pending-soft);
+  color: var(--pending);
+}
+
+.badge.advanced {
+  background: var(--advanced-soft);
+  color: var(--advanced);
+}
+
+.badge.rejected {
+  background: var(--rejected-soft);
+  color: var(--rejected);
+}
+
+.badge.on_hold {
+  background: var(--hold-soft);
+  color: var(--hold);
+}
+
+.badge.warn {
+  background: var(--hold-soft);
+  color: var(--hold);
+}
+
+.badge.ok {
+  background: var(--advanced-soft);
+  color: var(--advanced);
+}
+
+.chips {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  border-radius: 5px;
+  padding: 1px 8px;
+  font-size: 12.5px;
+  background: var(--pending-soft);
+  color: var(--pending);
+}
+
+.chip.matched {
+  background: var(--advanced-soft);
+  color: var(--advanced);
+}
+
+.chip.missing {
+  background: var(--rejected-soft);
+  color: var(--rejected);
+}
+
+/* --- обяснение --- */
+
+.score-headline {
+  display: flex;
+  gap: 22px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.score-headline .big {
+  font-size: 40px;
+  font-weight: 680;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.score-headline .of {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.formula {
+  margin-top: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 9px 12px;
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  font-size: 12.5px;
+  color: var(--muted);
+  overflow-x: auto;
+}
+
+.factor {
+  border-top: 1px solid var(--border);
+  padding: 14px 0;
+}
+
+.factor:first-of-type {
+  border-top: none;
+}
+
+.factor-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.factor-head .name {
+  font-weight: 600;
+}
+
+.factor-head .weight {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.factor-head .contribution {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.factor-bar {
+  margin: 8px 0;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.factor-bar > div {
+  height: 100%;
+  background: var(--accent);
+}
+
+.factor-detail {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.factor-lists {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.factor-lists .row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 13px;
+}
+
+.factor-lists .row > span:first-child {
+  color: var(--muted);
+  min-width: 68px;
+}
+
+/* --- бележки и състояния --- */
+
+.notice {
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-size: 13.5px;
+  margin-bottom: 14px;
+}
+
+.notice.info {
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+}
+
+.notice.warn {
+  background: var(--hold-soft);
+  color: var(--hold);
+}
+
+.notice.error {
+  background: var(--rejected-soft);
+  color: var(--rejected);
+}
+
+.empty {
+  padding: 34px 18px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 12.5px;
+}
+
+/* --- решение --- */
+
+.decision-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.decision-choice {
+  text-align: left;
+  padding: 10px 12px;
+  line-height: 1.35;
+}
+
+.decision-choice strong {
+  display: block;
+  font-weight: 600;
+}
+
+.decision-choice span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.decision-choice[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.decision-choice[aria-pressed="true"] strong {
+  color: var(--accent);
+}
+
+.decision-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.current-decision {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 11px 13px;
+  margin-bottom: 14px;
+  font-size: 13.5px;
+}
+
+.current-decision .rationale {
+  margin-top: 6px;
+  white-space: pre-wrap;
+}
+
+/* --- профил и одит --- */
+
+.definition-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+  font-size: 13.5px;
+  margin: 0;
+}
+
+.definition-list dt {
+  color: var(--muted);
+}
+
+.definition-list dd {
+  margin: 0;
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+}
+
+.timeline li {
+  border-left: 2px solid var(--border);
+  padding: 0 0 14px 14px;
+  position: relative;
+}
+
+.timeline li:last-child {
+  padding-bottom: 0;
+}
+
+.timeline li::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.timeline .when {
+  color: var(--subtle);
+  font-size: 12px;
+}
+
+.experience-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13.5px;
+}
+
+.experience-list li {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.experience-list li:last-child {
+  border-bottom: none;
+}
+
+.experience-list .when {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+details.raw-text summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+details.raw-text pre {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 11px;
+  max-height: 320px;
+  overflow: auto;
+  font-size: 12.5px;
+  white-space: pre-wrap;
+}
+
+/* --- качване на CV --- */
+
+.dropzone {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  padding: 22px;
+  text-align: center;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.dropzone.dragging {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.dropzone.busy {
+  opacity: 0.7;
+}
+
+.dropzone input[type="file"] {
+  /* Скрит, но фокусируем — етикетът е това, което се вижда и кликва. */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dropzone input[type="file"]:focus-visible + .dropzone-label {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+.dropzone-label {
+  display: block;
+  margin: 0;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.dropzone-label strong {
+  display: block;
+  font-weight: 600;
+}
+
+.dropzone-label span {
+  color: var(--subtle);
+  font-size: 12.5px;
+}
+
+.dropzone.busy .dropzone-label {
+  cursor: progress;
+}
+
+.spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+/* --- екрани „Позиции" --- */
+
+.avatar-menu {
+  position: relative;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--border);
+  font-weight: 650;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.avatar-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  width: 260px;
+  padding: 14px;
+  display: grid;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.position-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .position-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .position-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.position-card {
+  position: relative;
+  padding-right: 48px;
+  min-height: 96px;
+}
+
+.position-card:hover,
+.position-card:focus-within {
+  border-color: var(--accent);
+}
+
+.position-card h3 {
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.position-card h3 a {
+  color: inherit;
+}
+
+.position-card h3 a:hover {
+  text-decoration: none;
+}
+
+/* Връзката покрива цялата картичка, за да е кликаем целият правоъгълник, без
+   да се влагат два интерактивни елемента един в друг. */
+.position-card h3 a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+}
+
+.icon-button {
+  position: absolute;
+  z-index: 1;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  border-radius: 8px;
+}
+
+.icon-button:hover:not(:disabled) {
+  background: var(--rejected-soft);
+  border-color: var(--rejected);
+  color: var(--rejected);
+}
+
+button.danger {
+  background: var(--rejected);
+  border-color: var(--rejected);
+  color: #fff;
+}
+
+button.danger:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+/* --- диалози --- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(16, 24, 40, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal {
+  width: 100%;
+  max-width: 460px;
+  padding: 20px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 34px rgba(16, 24, 40, 0.22);
+}
+
+.modal > h2 {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.modal-body {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.modal-body p {
+  margin: 0 0 4px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.dropzone.big {
+  padding: 34px 22px;
+}
+
+.dropzone-icon {
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.dropzone.dragging .dropzone-icon {
+  color: var(--accent);
+}
+
+.upload-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ai-notice {
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* --- класация на позиция --- */
+
+.ranking-panel > h2 {
+  font-size: 15px;
+}
+
+.ranking-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+}
+
+.ranking-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 8px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  text-align: left;
+  font-size: 14px;
+  color: inherit;
+}
+
+.ranking-row:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.ranking-row .rank {
+  flex: none;
+  width: 40px;
+  color: var(--subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.ranking-row .who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ranking-row .who strong {
+  font-weight: 600;
+}
+
+.ranking-row .score {
+  flex: none;
+  font-size: 17px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.ranking-row .score .of {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--subtle);
+  margin-left: 3px;
+}
+
+/* --- екран на позиция: съдържание + постоянен sidebar --- */
+
+.position-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--rail);
+  gap: 18px;
+  align-items: start;
+  /* Изнася се извън центрираното main, за да опре рейлът в десния ръб на
+     екрана. Отдръпването е върху цялото оформление, не върху колоната — иначе
+     тя просто щеше да стане по-широка от зададените 340px.
+
+     --scrollbar идва от App: 100vw включва лентата за скролване, а видимата
+     ширина — не. Без корекцията страницата получава хоризонтален скрол точно
+     колкото е лентата. min() зануляваа отдръпването на тесен екран. */
+  margin-right: min(0px, calc((1180px + var(--scrollbar, 0px) - 100vw) / 2 - 24px));
+  /* Изяжда горния padding на main, за да опре рейлът в лентата с „Sirma".
+     Лявата колона си го връща за себе си, за да не залепне заглавието. */
+  margin-top: -24px;
+}
+
+.position-main > .breadcrumb {
+  padding-top: 24px;
+}
+
+.position-main {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  min-width: 0;
+}
+
+.position-main > .breadcrumb {
+  margin-bottom: -12px;
+}
+
+.position-main > .page-head {
+  margin-bottom: -4px;
+}
+
+/* Класацията е част от оформлението, не изскачащ панел: няма състояние, в което
+   да е скрита, затова няма и бутон, който да я скрие. Sticky я държи на екрана
+   при скролване; вътрешният скрол поема дълга класация, без да мести страницата. */
+.ranking-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  min-width: 0;
+}
+
+.ranking-sidebar .ranking-panel {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Рейл по ръба на екрана, не картичка в него: без заоблени ъгли и без рамка
+     отдясно, където е самият край. */
+  border-radius: 0;
+  border-right: 0;
+  border-top: 0;
+  border-bottom: 0;
+}
+
+/* Само списъкът скролва — заглавието и редът по AI Act остават видими. */
+.ranking-sidebar .ranking-list {
+  flex: 1;
+  overflow-y: auto;
+  margin-right: -4px;
+  padding-right: 4px;
+}
+
+.ranking-sidebar .ai-notice {
+  flex: none;
+}
+
+@media (max-width: 900px) {
+  .position-layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* На тесен екран минава отдолу — но пак не се затваря. */
+  .position-layout {
+    margin-right: 0;
+    margin-top: 0;
+  }
+
+  .position-main > .breadcrumb {
+    padding-top: 0;
+  }
+
+  .ranking-sidebar {
+    position: static;
+    height: auto;
+  }
+
+  .ranking-sidebar .ranking-panel {
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .ranking-sidebar .ranking-list {
+    overflow-y: visible;
+  }
+}
+
+/* --- кратко обяснение под качването --- */
+
+.summary-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.upload-summary h2 {
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+
+.summary-score {
+  flex: none;
+  font-size: 30px;
+  font-weight: 680;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-score .of {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--subtle);
+  letter-spacing: 0;
+  margin-left: 4px;
+}
+
+.summary-factors {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.summary-factor {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-factor:last-child {
+  border-bottom: 0;
+}
+
+.summary-factor-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.summary-factor-head .name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.summary-factor-head .percent {
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-link {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+/* Зелено и червено значат „човек е решил", не „системата отсъди". Затова само
+   тези два изхода имат цвят: pending и on_hold остават неутрални. */
+.ranking-row .who strong.advanced {
+  color: var(--advanced);
+}
+
+.ranking-row .who strong.rejected {
+  color: var(--rejected);
+}
+
+/* Подсказката в празно поле е hint, не стойност. */
+input::placeholder,
+textarea::placeholder {
+  color: var(--subtle);
+}
+
+/* --- версия на правилата --- */
+
+.ranking-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ruleset-tag {
+  font-size: 12px;
+  color: var(--subtle);
+  white-space: nowrap;
+}
+
+.ruleset-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.ruleset-picker select {
+  padding: 3px 6px;
+  font-size: 12.5px;
+  width: auto;
+}
+
+.ranking-truncated {
+  flex: none;
+  margin: 8px 0 0;
+}

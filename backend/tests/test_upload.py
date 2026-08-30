@@ -155,7 +155,7 @@ class TestUnreadableDocuments:
 
         response = upload(use_extractor(FailingExtractor()), sample_pdf_bytes)
         assert response.status_code == 422
-        assert "не може да бъде прочетен" in response.json()["detail"]
+        assert "could not be read" in response.json()["detail"]
 
     def test_blank_extraction_gives_422(self, use_extractor, sample_pdf_bytes):
         class BlankExtractor:
@@ -166,7 +166,7 @@ class TestUnreadableDocuments:
 
         response = upload(use_extractor(BlankExtractor()), sample_pdf_bytes)
         assert response.status_code == 422
-        assert "не е извлечен текст" in response.json()["detail"]
+        assert "No text was extracted" in response.json()["detail"]
 
     def test_nothing_is_persisted_on_failure(self, use_extractor, session, sample_pdf_bytes):
         class BlankExtractor:

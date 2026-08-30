@@ -45,8 +45,8 @@ SEED_ACTOR = "seed"
 
 SYNTHETIC_RULESET: dict[str, Any] = {
     "version": "2026.08.1",
-    "name": "Базови правила за инженерни роли",
-    "notes": "Уменията носят 65 точки, опитът 25, образованието 10.",
+    "name": "Baseline rules for engineering roles",
+    "notes": "Skills carry 65 points, experience 25, education 10.",
     "definition": {
         "weights": {
             "required_skills": 0.50,
@@ -62,7 +62,7 @@ SYNTHETIC_ROLES: tuple[dict[str, Any], ...] = (
     {
         "external_ref": "role-backend-01",
         "title": "Backend Developer (Python)",
-        "description": "Python/FastAPI екип, услуги върху PostgreSQL.",
+        "description": "Python/FastAPI team, services on PostgreSQL.",
         "requirements": {
             "required_skills": [
                 {"name": "python", "weight": 3},
@@ -78,7 +78,7 @@ SYNTHETIC_ROLES: tuple[dict[str, Any], ...] = (
     {
         "external_ref": "role-devops-01",
         "title": "DevOps Engineer",
-        "description": "Контейнери, оркестрация и инфраструктура като код.",
+        "description": "Containers, orchestration and infrastructure as code.",
         "requirements": {
             "required_skills": [
                 {"name": "kubernetes", "weight": 3},
@@ -245,12 +245,12 @@ class SeedReport:
         return [
             f"{label}: {', '.join(f'{name} x{count}' for name, count in sorted(bucket.items()))}"
             for label, bucket in (
-                ("създадени", self.created),
-                ("обновени", self.updated),
-                ("без промяна", self.skipped),
+                ("created", self.created),
+                ("updated", self.updated),
+                ("unchanged", self.skipped),
             )
             if bucket
-        ] or ["няма промени"]
+        ] or ["no changes"]
 
 
 def seed(session: Session) -> SeedReport:

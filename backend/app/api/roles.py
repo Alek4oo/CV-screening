@@ -62,13 +62,13 @@ MAX_PAGE_SIZE = 200
     "",
     response_model=RoleRead,
     status_code=status.HTTP_201_CREATED,
-    summary="Създава роля с нейните изисквания",
+    summary="Creates a role with its requirements",
 )
 def create_role(payload: RoleCreate, session: Session = Depends(get_session)) -> Role:
     if payload.external_ref and _role_by_ref(session, payload.external_ref) is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Вече има роля с external_ref {payload.external_ref!r}.",
+            detail=f"A role with external_ref {payload.external_ref!r} already exists.",
         )
 
     role = Role(**payload.model_dump())
@@ -90,7 +90,7 @@ def create_role(payload: RoleCreate, session: Session = Depends(get_session)) ->
     return role
 
 
-@router.get("", response_model=list[RoleRead], summary="Изброява ролите")
+@router.get("", response_model=list[RoleRead], summary="Lists roles")
 def list_roles(
     session: Session = Depends(get_session),
     role_status: RoleStatus | None = Query(default=None, alias="status"),
@@ -103,12 +103,12 @@ def list_roles(
     return list(session.scalars(statement.limit(limit).offset(offset)))
 
 
-@router.get("/{role_id}", response_model=RoleRead, summary="Връща една роля")
+@router.get("/{role_id}", response_model=RoleRead, summary="Returns one role")
 def get_role(role_id: UUID, session: Session = Depends(get_session)) -> Role:
     return _require_role(session, role_id)
 
 
-@router.patch("/{role_id}", response_model=RoleRead, summary="Обновява роля частично")
+@router.patch("/{role_id}", response_model=RoleRead, summary="Partially updates a role")
 def update_role(
     role_id: UUID, payload: RoleUpdate, session: Session = Depends(get_session)
 ) -> Role:
@@ -138,7 +138,7 @@ def update_role(
 @router.delete(
     "/{role_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Трие роля без класирания",
+    summary="Deletes a role that has no rankings",
 )
 def delete_role(role_id: UUID, session: Session = Depends(get_session)) -> None:
     role = _require_role(session, role_id)
@@ -152,8 +152,8 @@ def delete_role(role_id: UUID, session: Session = Depends(get_session)) -> None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
-                f"Ролята има {rankings} класирания и не се трие. "
-                f"Затворете я със status={RoleStatus.CLOSED.value}."
+                f"The role has {rankings} rankings and is not deleted. "
+                f"Close it with status={RoleStatus.CLOSED.value}."
             ),
         )
 
@@ -164,7 +164,7 @@ def delete_role(role_id: UUID, session: Session = Depends(get_session)) -> None:
 @router.post(
     "/{role_id}/rank",
     response_model=RankResponse,
-    summary="Класира кандидатите за роля по активните правила",
+    summary="Ranks candidates for a role under the active ruleset",
 )
 def rank_candidates(
     role_id: UUID,
@@ -179,16 +179,16 @@ def rank_candidates(
     try:
         scorer = scorer_factory(ruleset)
     except InvalidRulesError as exc:
-        logger.error("Неизползваеми правила %s: %s", ruleset.version, exc)
+        logger.error("Unusable ruleset %s: %s", ruleset.version, exc)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Правилата {ruleset.version} са неизползваеми: {exc}",
+            detail=f"Ruleset {ruleset.version} is unusable: {exc}",
         ) from exc
     except ScoringEngineUnavailableError as exc:
-        logger.error("Скоринг адаптерът е недостъпен: %s", exc)
+        logger.error("The scoring adapter is unavailable: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Скоринг услугата е временно недостъпна.",
+            detail="The scoring service is temporarily unavailable.",
         ) from exc
 
     candidates = _select_candidates(session, request.candidate_ids)
@@ -199,10 +199,10 @@ def rank_candidates(
             result = scorer.score(candidate, role)
         except InvalidRulesError as exc:
             # Изискванията на ролята, не правилата — но и двете са конфигурация.
-            logger.error("Неизползваеми изисквания на роля %s: %s", role.id, exc)
+            logger.error("Unusable requirements on role %s: %s", role.id, exc)
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Изискванията на ролята са неизползваеми: {exc}",
+                detail=f"The role requirements are unusable: {exc}",
             ) from exc
 
         ranking = _upsert_ranking(session, candidate, role, ruleset, result)
@@ -256,7 +256,7 @@ def _require_role(session: Session, role_id: UUID) -> Role:
     if role is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Няма роля с id {role_id}.",
+            detail=f"No role with id {role_id}.",
         )
     return role
 
@@ -272,7 +272,7 @@ def _resolve_ruleset(session: Session, version: str | None) -> Ruleset:
         if ruleset is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Няма версия правила {version!r}.",
+                detail=f"No ruleset version {version!r}.",
             )
         return ruleset
 
@@ -286,7 +286,7 @@ def _resolve_ruleset(session: Session, version: str | None) -> Ruleset:
     if ruleset is None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Няма активна версия правила. Активирайте ruleset или подайте ruleset_version.",
+            detail="No active ruleset. Activate one or pass ruleset_version.",
         )
     return ruleset
 
@@ -303,7 +303,7 @@ def _select_candidates(session: Session, candidate_ids: list[UUID] | None) -> li
         if missing:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Няма кандидати с id: {', '.join(sorted(str(item) for item in missing))}.",
+                detail=f"No candidates with id: {', '.join(sorted(str(item) for item in missing))}.",
             )
 
     return candidates

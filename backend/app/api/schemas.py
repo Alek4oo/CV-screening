@@ -204,7 +204,7 @@ class DecisionWrite(BaseModel):
     човек, а само смяна на стойност в базата.
     """
 
-    outcome: DecisionOutcome = Field(description="pending | advanced | rejected | on_hold")
+    outcome: DecisionOutcome = Field(description="for_review | advanced | rejected | on_hold")
     decided_by: str = Field(min_length=1, max_length=255, description="Which recruiter is deciding")
     rationale: str = Field(min_length=1, description="Why — recorded in the audit log")
 
@@ -264,7 +264,7 @@ class RankingRow(BaseModel):
         default_factory=list, description="Hard requirements not met"
     )
     outcome: DecisionOutcome = Field(
-        description="Decision status. With no Decision row this is pending."
+        description="Decision status. With no Decision row this is for_review."
     )
     decided_by: str | None = None
     decided_at: datetime | None = None

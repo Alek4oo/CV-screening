@@ -122,7 +122,7 @@ def update_ruleset(
 @router.post(
     "/{ruleset_id}/activate",
     response_model=RulesetRead,
-    summary="Activates a version and retires the previous one",
+    summary="Activates a version and archives the previous one",
 )
 def activate_ruleset(ruleset_id: UUID, session: Session = Depends(get_session)) -> Ruleset:
     ruleset = _require_ruleset(session, ruleset_id)
@@ -134,16 +134,16 @@ def activate_ruleset(ruleset_id: UUID, session: Session = Depends(get_session)) 
         session.scalars(select(Ruleset).where(Ruleset.status == RulesetStatus.ACTIVE))
     )
     for old in previous:
-        old.status = RulesetStatus.RETIRED
+        old.status = RulesetStatus.ARCHIVED
         session.add(
             AuditLog(
                 actor="api",
-                action=AuditAction.RULESET_RETIRED,
+                action=AuditAction.RULESET_ARCHIVED,
                 entity_type="ruleset",
                 entity_id=old.id,
                 ruleset_id=old.id,
                 payload_in={"replaced_by": ruleset.version},
-                payload_out={"status": RulesetStatus.RETIRED.value},
+                payload_out={"status": RulesetStatus.ARCHIVED.value},
             )
         )
 
@@ -160,7 +160,7 @@ def activate_ruleset(ruleset_id: UUID, session: Session = Depends(get_session)) 
             payload_in={"version": ruleset.version},
             payload_out={
                 "weights": ruleset.definition.get("weights"),
-                "retired": [old.version for old in previous],
+                "archived": [old.version for old in previous],
             },
         )
     )

@@ -1,0 +1,7 @@
+Alembic миграции за CV-screening. Целева база: PostgreSQL 13+.
+
+    cd backend
+    export DATABASE_URL=postgresql+psycopg2://user:pass@host:5432/db
+    alembic upgrade head
+
+Схемата се движи само оттук — приложението не създава таблици.

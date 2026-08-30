@@ -121,7 +121,7 @@ class TestList:
         top = rankings(client, role.id).json()["rows"][0]
         assert top["score"] == 100.0
         assert top["meets_minimum"] is True
-        assert top["outcome"] == "pending"
+        assert top["outcome"] == "for_review"
         assert top["decided_by"] is None
         assert [factor["name"] for factor in top["top_factors"]] == [
             "required_skills",
@@ -134,11 +134,11 @@ class TestList:
         assert weak["meets_minimum"] is False
         assert "python" in weak["missing"]
         # Непокритият минимум не изхвърля кандидата и не му слага статус.
-        assert weak["outcome"] == "pending"
+        assert weak["outcome"] == "for_review"
 
     def test_counts_are_by_decision_status(self, client, role, ranked):
         counts = rankings(client, role.id).json()["counts"]
-        assert counts == {"pending": 3, "advanced": 0, "rejected": 0, "on_hold": 0}
+        assert counts == {"for_review": 3, "advanced": 0, "rejected": 0, "on_hold": 0}
 
     def test_role_without_rankings_returns_an_empty_table(self, client, role):
         body = rankings(client, role.id).json()
@@ -183,7 +183,7 @@ class TestFilters:
         body = rankings(client, role.id, outcome="advanced").json()
         assert [row["full_name"] for row in body["rows"]] == ["Maria Ivanova"]
         assert body["counts"]["advanced"] == 1
-        assert body["counts"]["pending"] == 2
+        assert body["counts"]["for_review"] == 2
 
     def test_position_survives_filtering(self, client, role, ranked):
         # Филтърът скрива редове, но не преномерира класацията — №3 си остава №3.
@@ -272,9 +272,9 @@ class TestNoAutomaticRejection:
         # Класирането само подрежда. Статус се ражда единствено от човек.
         assert session.scalars(select(Decision)).all() == []
 
-    def test_every_row_starts_pending_even_below_the_minimum(self, client, role, ranked):
+    def test_every_row_starts_for_review_even_below_the_minimum(self, client, role, ranked):
         body = rankings(client, role.id).json()
-        assert {row["outcome"] for row in body["rows"]} == {"pending"}
+        assert {row["outcome"] for row in body["rows"]} == {"for_review"}
 
     def test_reranking_does_not_touch_an_existing_decision(
         self, client, session, role, ruleset, ranked

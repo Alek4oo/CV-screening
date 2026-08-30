@@ -35,7 +35,7 @@ describe("filters become query parameters", () => {
     const spy = mockFetch(200, { rows: [] });
     await api.listRankings("role-1", {
       q: " Ivanova ",
-      outcome: "pending",
+      outcome: "for_review",
       meets_minimum: false,
       min_score: 40,
       sort: "name_asc",
@@ -44,7 +44,7 @@ describe("filters become query parameters", () => {
 
     const params = urlOf(spy).searchParams;
     expect(params.get("q")).toBe("Ivanova");
-    expect(params.get("outcome")).toBe("pending");
+    expect(params.get("outcome")).toBe("for_review");
     expect(params.get("meets_minimum")).toBe("false");
     expect(params.get("min_score")).toBe("40");
     expect(params.get("sort")).toBe("name_asc");

@@ -43,7 +43,7 @@ function row(overrides: Partial<RankingRow> & Pick<RankingRow, "candidate_id">):
     meets_minimum: true,
     top_factors: [],
     missing: [],
-    outcome: "pending",
+    outcome: "for_review",
     decided_by: null,
     decided_at: null,
     ranked_at: "2026-08-27T09:00:00Z",
@@ -52,7 +52,7 @@ function row(overrides: Partial<RankingRow> & Pick<RankingRow, "candidate_id">):
 }
 
 const V1: RulesetRef = { id: "rs-1", version: "2026.08.1", name: "Base", status: "active" };
-const V0: RulesetRef = { id: "rs-0", version: "2026.07.1", name: "Previous", status: "retired" };
+const V0: RulesetRef = { id: "rs-0", version: "2026.07.1", name: "Previous", status: "archived" };
 
 function list(rows: RankingRow[], rulesets = [V1]): RankingList {
   return {
@@ -64,7 +64,7 @@ function list(rows: RankingRow[], rulesets = [V1]): RankingList {
     mode: "masked",
     total: rows.length,
     total_unfiltered: rows.length,
-    counts: { pending: rows.length, advanced: 0, rejected: 0, on_hold: 0 },
+    counts: { for_review: rows.length, advanced: 0, rejected: 0, on_hold: 0 },
     rows,
   };
 }
@@ -204,7 +204,7 @@ describe("the ranking", () => {
     const decided = [
       row({ candidate_id: IVAN, full_name: "Ivan Petrov", position: 1, outcome: "advanced" }),
       row({ candidate_id: MARIA, full_name: "Maria Ivanova", position: 2, outcome: "rejected" }),
-      row({ candidate_id: "c3", full_name: "Petya Hristova", position: 3, outcome: "pending" }),
+      row({ candidate_id: "c3", full_name: "Petya Hristova", position: 3, outcome: "for_review" }),
       row({ candidate_id: "c4", full_name: "Elena Todorova", position: 4, outcome: "on_hold" }),
     ];
     vi.spyOn(api, "getRole").mockResolvedValue(role);

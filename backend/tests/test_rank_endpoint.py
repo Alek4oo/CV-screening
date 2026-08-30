@@ -240,7 +240,7 @@ class TestSelection:
                 version="2026.07.1",
                 name="Стари правила",
                 definition={"weights": {"required_skills": 1}},
-                status=RulesetStatus.RETIRED,
+                status=RulesetStatus.ARCHIVED,
             )
         )
         session.commit()

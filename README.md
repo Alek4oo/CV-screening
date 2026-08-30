@@ -62,6 +62,8 @@ OCR Tesseract (bul), зад сменяем адаптер
 
 Данните са силно свързани (кандидати ↔ роли ↔ решения ↔ правила ↔ одит), а одитната следа иска ACID и неизменимост — силните страни на релационния модел. Гъвкавите, вариращи CV полета се пазят в JSONB колони; евентуален семантичен матчинг — през pgvector. Всичко в една база, без отделна NoSQL система.
 
+Таблиците са седем: candidate, role, ruleset, ranking, decision, audit_log и bias_audit (резултатът от одита за двойка роля/версия правила — метрики по групи и разликата между masked и unmasked класирането).
+
 Структура на проекта
 .
 ├── backend/ # FastAPI: API, скоринг, bias-одит, логове
@@ -71,6 +73,7 @@ OCR Tesseract (bul), зад сменяем адаптер
 │ │ ├── compliance/ # bias-одит, маскиране, одитни логове
 │ │ ├── ocr/ # адаптер за OCR (Tesseract default)
 │ │ └── models/ # ORM модели
+│ ├── alembic/ # миграции — единственият път до схемата
 │ └── tests/
 ├── frontend/ # React изглед за рекрутер (Vite + TypeScript)
 │ └── src/
@@ -102,12 +105,27 @@ API + документация: http://localhost:8000/docs
 bash
 cd backend
 pip install -r requirements.txt
+alembic upgrade head
 uvicorn app.main:app --reload
 
-Настройките идват от backend/.env (виж .env.example). За бърз старт без Postgres:
+Настройките идват от backend/.env (виж .env.example):
 
-DATABASE_URL=sqlite:///./dev.db
+DATABASE_URL=postgresql+psycopg2://cvscreening:cvscreening@localhost:5432/cvscreening
 TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe # само ако не е на PATH
+
+Схема и миграции
+
+Схемата се движи само през Alembic. Приложението не създава таблици — стартиране срещу немигрирана база дава грешка от базата, вместо мълчаливо създадена таблица.
+
+bash
+cd backend
+alembic upgrade head         # прилага схемата
+alembic downgrade base       # сваля я
+alembic upgrade head --sql   # само рендерира SQL-а, без да пипа база
+
+Целевата база е PostgreSQL 13+ (по-ниска няма gen_random_uuid() в ядрото). Схемата ползва Postgres-native типове: JSONB за вариращите полета, native UUID ключове, timestamptz навсякъде, ENUM типове за статусите и BEFORE UPDATE/DELETE тригер, който прави audit_log append-only на ниво база.
+
+SQLite остава само за тестовете в паметта — моделите имат вариант за него в app/models/common.py. Зададе ли се TEST_DATABASE_URL към Postgres, тестовете вдигат схемата през самите миграции.
 
 Качване на CV — приемат се PDF (с текстов слой или сканиран) и TXT. През изгледа е с влачене на файлове (виж по-долу); през API-то:
 
@@ -178,14 +196,14 @@ GET /roles/{id}/rankings връща записаната класация — н
 Позицията се смята върху пълната класация за (роля, версия), преди филтрите. Иначе „покажи само за преглед" би преномерирал кандидатите и рекрутер, видял №3, после би го намерил като №1. Броячите по статус са по същата причина върху пълния набор.
 
 bash
-curl "http://127.0.0.1:8000/roles/<role-id>/rankings?outcome=pending&meets_minimum=false"
+curl "http://127.0.0.1:8000/roles/<role-id>/rankings?outcome=for_review&meets_minimum=false"
 
 PUT /rankings/{id}/decision е единственият път, по който кандидат сменя статус. Няма автоматичен вариант: заявката изисква и кой решава, и защо — и двете влизат в Decision и в одитния лог, заедно с версията правила, дала скора.
 
 bash
 curl -X PUT http://127.0.0.1:8000/rankings/<ranking-id>/decision   -H "Content-Type: application/json"   -d '{"outcome": "advanced", "decided_by": "ана@sirma.bg", "rationale": "Покрива всички задължителни умения."}'
 
-Статусите са pending → advanced | rejected | on_hold, като връщането към pending също е решение и също иска обосновка. Липсваща обосновка или липсващо име дава 422 и нищо не се записва — на ниво база същото пази CHECK ограничението ck_decision_requires_human.
+Статусите са for_review → advanced | rejected | on_hold, като връщането към for_review също е решение и също иска обосновка. Липсваща обосновка или липсващо име дава 422 и нищо не се записва — на ниво база същото пази CHECK ограничението ck_decision_requires_human.
 
 meets_minimum=false не отхвърля никого. Флагът стои в реда, липсващите изисквания се изброяват до него, и толкова — решението остава на човек.
 

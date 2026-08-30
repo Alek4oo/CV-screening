@@ -4,25 +4,24 @@ PRD-то иска вход, изход, версия на правилата и 
 колоните по-долу. Няма updated_at и няма релации с cascade: ред веднъж записан
 не се променя и не се трие.
 
-Забележка: ORM-ът не може да наложи append-only сам по себе си. Истинската
-гаранция е на ниво база — REVOKE UPDATE/DELETE за ролята на приложението или
-BEFORE UPDATE/DELETE тригер. Идва с миграциите.
+Append-only-то е наложено на ниво база: базовата миграция слага BEFORE
+UPDATE OR DELETE тригер, който вдига изключение. ORM-ът сам по себе си не може
+да го гарантира.
 
-Второ предупреждение за същия момент: добавена стойност в AuditAction стига до
-празна база през create_all, но не и до вече създаден Postgres ENUM тип. Там
-трябва ALTER TYPE audit_action ADD VALUE — първата работа на Alembic.
+Добавена стойност в AuditAction не стига до вече създаден Postgres ENUM тип —
+за нея трябва отделна миграция с ALTER TYPE audit_action ADD VALUE.
 """
 
 import enum
 from datetime import datetime
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Uuid, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
-from app.models.common import JSONDict
+from app.models.common import JSONDict, UUIDType, uuid_pk
 
 
 class AuditAction(str, enum.Enum):
@@ -32,7 +31,7 @@ class AuditAction(str, enum.Enum):
     DECISION_RECORDED = "decision_recorded"
     RULESET_CREATED = "ruleset_created"
     RULESET_ACTIVATED = "ruleset_activated"
-    RULESET_RETIRED = "ruleset_retired"
+    RULESET_ARCHIVED = "ruleset_archived"
     ROLE_CREATED = "role_created"
     ROLE_UPDATED = "role_updated"
     BIAS_AUDIT_RUN = "bias_audit_run"
@@ -41,11 +40,11 @@ class AuditAction(str, enum.Enum):
 class AuditLog(Base):
     __tablename__ = "audit_log"
     __table_args__ = (
-        Index("ix_audit_log_entity", "entity_type", "entity_id"),
-        Index("ix_audit_log_occurred_at", "occurred_at"),
+        # Одитът се чете като „какво е ставало с това нещо, подредено по време".
+        Index("ix_audit_log_entity", "entity_type", "entity_id", "occurred_at"),
     )
 
-    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = uuid_pk()
 
     occurred_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -64,11 +63,11 @@ class AuditLog(Base):
 
     # Свободна препратка, не FK: логът преживява триенето на това, което описва.
     entity_type: Mapped[str] = mapped_column(String(64), nullable=False)
-    entity_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True))
+    entity_id: Mapped[UUID | None] = mapped_column(UUIDType)
 
     # Версията правила, в сила при действието.
     ruleset_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("ruleset.id", ondelete="RESTRICT"), index=True
+        UUIDType, ForeignKey("ruleset.id", ondelete="RESTRICT"), index=True
     )
 
     payload_in: Mapped[dict[str, Any]] = mapped_column(JSONDict, nullable=False, default=dict)

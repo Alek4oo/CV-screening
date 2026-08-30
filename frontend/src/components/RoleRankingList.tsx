@@ -23,7 +23,7 @@ interface Props {
   onOpen: (candidateId: string) => void;
 }
 
-/** Only decided outcomes get a class; pending and on-hold stay plain. */
+/** Only decided outcomes get a class; for-review and on-hold stay plain. */
 export function outcomeClass(outcome: DecisionOutcome): string {
   return outcome === "advanced" || outcome === "rejected" ? outcome : "";
 }

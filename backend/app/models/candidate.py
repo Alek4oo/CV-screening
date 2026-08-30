@@ -6,13 +6,13 @@ PRD не е стъпка, която някой може да забрави д�
 """
 
 from typing import TYPE_CHECKING, Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from sqlalchemy import String, Text, Uuid
+from sqlalchemy import String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
-from app.models.common import JSONDict, TimestampMixin
+from app.models.common import JSONDict, TimestampMixin, uuid_pk
 
 if TYPE_CHECKING:
     from app.models.ranking import Ranking
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 class Candidate(TimestampMixin, Base):
     __tablename__ = "candidate"
 
-    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = uuid_pk()
 
     # Идентификатор от seed набора — държи синтетичните данни идемпотентни.
     external_ref: Mapped[str | None] = mapped_column(String(64), unique=True)

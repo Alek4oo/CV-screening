@@ -9,11 +9,10 @@ class Settings(BaseSettings):
     app_name: str = "AI CV Screening API"
     app_version: str = "0.1.0"
 
-    # Пълен SQLAlchemy URL. По подразбиране сочи към db услугата от docker-compose.
+    # Пълен SQLAlchemy URL. По подразбиране сочи към db услугата от
+    # docker-compose. Същата променлива чете и alembic/env.py — един източник
+    # на истина за това коя е базата.
     database_url: str = "postgresql+psycopg2://cvscreening:cvscreening@db:5432/cvscreening"
-
-    # Временно, докато няма миграции: създава таблиците при старт. Виж app.main.
-    auto_create_tables: bool = True
 
     # --- Frontend ---
     # Произходите, от които React изгледът има право да вика API-то. Дев

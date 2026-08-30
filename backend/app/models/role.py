@@ -2,15 +2,16 @@
 
 import enum
 from typing import TYPE_CHECKING, Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from sqlalchemy import Enum, String, Text, Uuid
+from sqlalchemy import Enum, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
-from app.models.common import JSONDict, TimestampMixin
+from app.models.common import JSONDict, TimestampMixin, uuid_pk
 
 if TYPE_CHECKING:
+    from app.models.bias_audit import BiasAudit
     from app.models.ranking import Ranking
 
 
@@ -23,7 +24,7 @@ class RoleStatus(str, enum.Enum):
 class Role(TimestampMixin, Base):
     __tablename__ = "role"
 
-    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = uuid_pk()
 
     external_ref: Mapped[str | None] = mapped_column(String(64), unique=True)
 
@@ -45,6 +46,9 @@ class Role(TimestampMixin, Base):
     )
 
     rankings: Mapped[list["Ranking"]] = relationship(
+        back_populates="role", cascade="all, delete-orphan"
+    )
+    bias_audits: Mapped[list["BiasAudit"]] = relationship(
         back_populates="role", cascade="all, delete-orphan"
     )
 

@@ -80,17 +80,17 @@ class TestActivation:
         assert body["status"] == "active"
         assert body["activated_at"] is not None
 
-    def test_activating_retires_the_previous_version(self, client, session):
+    def test_activating_archives_the_previous_version(self, client, session):
         first = create(client, version="2026.08.1").json()["id"]
         activate(client, first)
         second = create(client, version="2026.09.1").json()["id"]
 
         activate(client, second)
 
-        assert client.get(f"/rulesets/{first}").json()["status"] == "retired"
+        assert client.get(f"/rulesets/{first}").json()["status"] == "archived"
         assert client.get("/rulesets/active").json()["id"] == second
 
-    def test_activation_is_audited_with_the_retired_version(self, client, session):
+    def test_activation_is_audited_with_the_archived_version(self, client, session):
         first = create(client, version="2026.08.1").json()["id"]
         activate(client, first)
         second = create(client, version="2026.09.1").json()["id"]
@@ -100,12 +100,12 @@ class TestActivation:
             select(AuditLog).where(AuditLog.action == AuditAction.RULESET_ACTIVATED)
         ).all()
         assert len(activations) == 2
-        assert activations[-1].payload_out["retired"] == ["2026.08.1"]
+        assert activations[-1].payload_out["archived"] == ["2026.08.1"]
 
-        retirements = session.scalars(
-            select(AuditLog).where(AuditLog.action == AuditAction.RULESET_RETIRED)
+        archivals = session.scalars(
+            select(AuditLog).where(AuditLog.action == AuditAction.RULESET_ARCHIVED)
         ).all()
-        assert retirements[0].payload_in["replaced_by"] == "2026.09.1"
+        assert archivals[0].payload_in["replaced_by"] == "2026.09.1"
 
     def test_activating_twice_is_idempotent(self, client, session):
         ruleset_id = create(client).json()["id"]
@@ -124,14 +124,14 @@ class TestActivation:
             == 1
         )
 
-    def test_a_retired_version_can_be_brought_back(self, client):
+    def test_an_archived_version_can_be_brought_back(self, client):
         first = create(client, version="2026.08.1").json()["id"]
         activate(client, first)
         second = create(client, version="2026.09.1").json()["id"]
         activate(client, second)
 
         assert activate(client, first).json()["status"] == "active"
-        assert client.get(f"/rulesets/{second}").json()["status"] == "retired"
+        assert client.get(f"/rulesets/{second}").json()["status"] == "archived"
 
     def test_unknown_id_is_a_404(self, client):
         assert activate(client, "00000000-0000-0000-0000-000000000000").status_code == 404
@@ -162,7 +162,7 @@ class TestImmutability:
         assert client.delete(f"/rulesets/{ruleset_id}").status_code == 409
         assert session.scalars(select(Ruleset)).all()
 
-    def test_retired_version_cannot_be_edited(self, client):
+    def test_archived_version_cannot_be_edited(self, client):
         first = create(client, version="2026.08.1").json()["id"]
         activate(client, first)
         activate(client, create(client, version="2026.09.1").json()["id"])

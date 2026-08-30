@@ -7,10 +7,10 @@
  */
 
 export type RoleStatus = "draft" | "open" | "closed";
-export type RulesetStatus = "draft" | "active" | "retired";
+export type RulesetStatus = "draft" | "active" | "archived";
 
 /** Статусите на решението — единственото, което мести кандидат по потока. */
-export type DecisionOutcome = "pending" | "advanced" | "rejected" | "on_hold";
+export type DecisionOutcome = "for_review" | "advanced" | "rejected" | "on_hold";
 
 export interface Role {
   id: string;

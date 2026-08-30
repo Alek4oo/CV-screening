@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import inspect, select
 from sqlalchemy.orm import Session
 
 from app.core.db import Base, SessionLocal, engine
@@ -381,8 +381,16 @@ def _seed_candidates(session: Session, report: SeedReport) -> None:
 
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    # Същият компромис като в app.main: без Alembic таблиците се създават тук.
-    Base.metadata.create_all(engine)
+
+    # Seed-ът пълни схема, не я създава. Липсваща таблица значи, че миграциите
+    # не са пуснати — казваме го тук, вместо да оставим неясна грешка от базата.
+    missing = sorted(set(Base.metadata.tables) - set(inspect(engine).get_table_names()))
+    if missing:
+        logger.error(
+            "Missing tables: %s. Run the migrations first: alembic upgrade head",
+            ", ".join(missing),
+        )
+        return 1
 
     with SessionLocal() as session:
         report = seed(session)

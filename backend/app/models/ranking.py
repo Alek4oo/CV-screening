@@ -9,7 +9,7 @@
 import enum
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from sqlalchemy import (
     CheckConstraint,
@@ -18,12 +18,12 @@ from sqlalchemy import (
     Index,
     Numeric,
     UniqueConstraint,
-    Uuid,
+    desc,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
-from app.models.common import JSONDict, TimestampMixin
+from app.models.common import JSONDict, TimestampMixin, UUIDType, uuid_pk
 
 if TYPE_CHECKING:
     from app.models.candidate import Candidate
@@ -50,21 +50,29 @@ class Ranking(TimestampMixin, Base):
             name="uq_ranking_candidate_role_ruleset_mode",
         ),
         CheckConstraint("score >= 0", name="ck_ranking_score_non_negative"),
-        # Класацията за една роля се чете подредена по резултат.
-        Index("ix_ranking_role_mode_score", "role_id", "mode", "score"),
+        # Класацията за една роля се чете точно така: филтър по роля, подредба
+        # по низходящ резултат. DESC-ът в индекса значи, че Postgres взима
+        # първите N реда от него, без сортиране.
+        Index("ix_ranking_role_score", "role_id", desc("score")),
     )
 
-    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = uuid_pk()
 
     candidate_id: Mapped[UUID] = mapped_column(
-        ForeignKey("candidate.id", ondelete="CASCADE"), nullable=False, index=True
+        UUIDType,
+        ForeignKey("candidate.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     role_id: Mapped[UUID] = mapped_column(
-        ForeignKey("role.id", ondelete="CASCADE"), nullable=False, index=True
+        UUIDType, ForeignKey("role.id", ondelete="CASCADE"), nullable=False, index=True
     )
     # RESTRICT: версия правила, с която има класирания, не се трие.
     ruleset_id: Mapped[UUID] = mapped_column(
-        ForeignKey("ruleset.id", ondelete="RESTRICT"), nullable=False, index=True
+        UUIDType,
+        ForeignKey("ruleset.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
     )
 
     mode: Mapped[RankingMode] = mapped_column(

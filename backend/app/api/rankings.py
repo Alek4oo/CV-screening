@@ -81,7 +81,7 @@ def list_role_rankings(
         default=None, description="Ruleset version. Defaults to the most recently activated."
     ),
     outcome: DecisionOutcome | None = Query(
-        default=None, description="Decision status. pending covers the undecided too."
+        default=None, description="Decision status. for_review covers the undecided too."
     ),
     meets_minimum: bool | None = Query(
         default=None, description="Only those meeting, or only those missing, the minimum"
@@ -224,7 +224,7 @@ def put_decision(
     ranking = _require_ranking(session, ranking_id)
 
     decision = ranking.decision
-    previous = decision.outcome.value if decision is not None else DecisionOutcome.PENDING.value
+    previous = decision.outcome.value if decision is not None else DecisionOutcome.FOR_REVIEW.value
     now = datetime.now(timezone.utc)
 
     if decision is None:
@@ -384,7 +384,7 @@ def _row(ranking: Ranking, position: int) -> RankingRow:
             if factor.name in HARD_FACTORS
             for item in factor.missing
         ],
-        outcome=decision.outcome if decision is not None else DecisionOutcome.PENDING,
+        outcome=decision.outcome if decision is not None else DecisionOutcome.FOR_REVIEW,
         decided_by=decision.decided_by if decision is not None else None,
         decided_at=decision.decided_at if decision is not None else None,
         ranked_at=ranking.updated_at,

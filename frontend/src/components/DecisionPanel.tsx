@@ -23,7 +23,7 @@ interface Props {
 }
 
 export function DecisionPanel({ rankingId, decision, recruiter, onRecorded }: Props) {
-  const current: DecisionOutcome = decision?.outcome ?? "pending";
+  const current: DecisionOutcome = decision?.outcome ?? "for_review";
 
   const [choice, setChoice] = useState<DecisionOutcome | null>(null);
   const [rationale, setRationale] = useState("");

@@ -112,14 +112,14 @@ class TestRecording:
         assert body["decision"]["outcome"] == "on_hold"
         assert body["decision"]["rationale"] == "чака отговор"
 
-    def test_can_be_returned_to_pending(self, client, ranking_id):
+    def test_can_be_returned_for_review(self, client, ranking_id):
         decide(client, ranking_id, outcome="rejected", decided_by="r", rationale="слаб профил")
         response = decide(
-            client, ranking_id, outcome="pending", decided_by="r", rationale="връщам за преглед"
+            client, ranking_id, outcome="for_review", decided_by="r", rationale="връщам за преглед"
         )
 
         assert response.status_code == 200
-        assert response.json()["outcome"] == "pending"
+        assert response.json()["outcome"] == "for_review"
         # Връщането също е човешко действие — авторът остава записан.
         assert response.json()["decided_by"] == "r"
 
@@ -188,7 +188,7 @@ class TestAuditTrail:
             .order_by(AuditLog.occurred_at)
         ).all()
         assert len(entries) == 2
-        assert entries[0].payload_out["previous_outcome"] == "pending"
+        assert entries[0].payload_out["previous_outcome"] == "for_review"
         assert entries[1].payload_out["previous_outcome"] == "advanced"
 
     def test_audit_endpoint_returns_scoring_and_decision_history(self, client, ranking_id):

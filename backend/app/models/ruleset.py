@@ -6,27 +6,27 @@
 """
 
 import enum
+from datetime import datetime
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from sqlalchemy import DateTime, Enum, String, Text, Uuid
+from sqlalchemy import DateTime, Enum, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
-from app.models.common import JSONDict, TimestampMixin
-from datetime import datetime
+from app.models.common import JSONDict, TimestampMixin, uuid_pk
 
 
 class RulesetStatus(str, enum.Enum):
     DRAFT = "draft"
     ACTIVE = "active"
-    RETIRED = "retired"
+    ARCHIVED = "archived"
 
 
 class Ruleset(TimestampMixin, Base):
     __tablename__ = "ruleset"
 
-    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = uuid_pk()
 
     # Човешки четима версия, напр. "2026.08.1". Уникална — един ред, една версия.
     version: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)

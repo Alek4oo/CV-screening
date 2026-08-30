@@ -9,17 +9,17 @@
 import type { DecisionOutcome, RulesetStatus } from "./types";
 
 export const OUTCOME_LABELS: Record<DecisionOutcome, string> = {
-  pending: "For review",
+  for_review: "For review",
   advanced: "Advanced",
   rejected: "Rejected",
   on_hold: "On hold",
 };
 
 /** Ред на статусите в лентата и в бутоните — потокът, както се минава. */
-export const OUTCOMES: DecisionOutcome[] = ["pending", "advanced", "rejected", "on_hold"];
+export const OUTCOMES: DecisionOutcome[] = ["for_review", "advanced", "rejected", "on_hold"];
 
 export const OUTCOME_HINTS: Record<DecisionOutcome, string> = {
-  pending: "Back for review — no decision taken yet.",
+  for_review: "Back for review — no decision taken yet.",
   advanced: "Moves forward in the process.",
   rejected: "Turned down by the recruiter.",
   on_hold: "Held — the decision is deferred, not a refusal.",
@@ -28,7 +28,7 @@ export const OUTCOME_HINTS: Record<DecisionOutcome, string> = {
 export const RULESET_STATUS_LABELS: Record<RulesetStatus, string> = {
   draft: "Draft",
   active: "Active",
-  retired: "Retired",
+  archived: "Archived",
 };
 
 export const FACTOR_LABELS: Record<string, string> = {

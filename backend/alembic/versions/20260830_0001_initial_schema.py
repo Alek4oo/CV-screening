@@ -244,11 +244,12 @@ def upgrade() -> None:
         # Логическа препратка, без FK: сочи различни таблици и преживява
         # триенето на това, което описва.
         sa.Column("entity_id", postgresql.UUID(as_uuid=True), nullable=True),
+        # Също без FK: одитният ред за създаването на ruleset сочи към него, а
+        # твърд RESTRICT би направил изтриването на чернова невъзможно.
         sa.Column("ruleset_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("payload_in", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
         sa.Column("payload_out", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(["ruleset_id"], ["ruleset.id"], ondelete="RESTRICT"),
     )
     op.create_index(
         "ix_audit_log_entity", "audit_log", ["entity_type", "entity_id", "occurred_at"]

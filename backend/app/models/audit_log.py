@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, func
+from sqlalchemy import DateTime, Enum, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -65,10 +65,11 @@ class AuditLog(Base):
     entity_type: Mapped[str] = mapped_column(String(64), nullable=False)
     entity_id: Mapped[UUID | None] = mapped_column(UUIDType)
 
-    # Версията правила, в сила при действието.
-    ruleset_id: Mapped[UUID | None] = mapped_column(
-        UUIDType, ForeignKey("ruleset.id", ondelete="RESTRICT"), index=True
-    )
+    # Версията правила, в сила при действието — по същата причина също без FK.
+    # Създаването на ruleset пише одитен ред, който сочи към него; твърд
+    # RESTRICT тук значи, че черновата вече не може да бъде изтрита от
+    # собствения си одитен запис. Логът не бива да заключва това, което описва.
+    ruleset_id: Mapped[UUID | None] = mapped_column(UUIDType, index=True)
 
     payload_in: Mapped[dict[str, Any]] = mapped_column(JSONDict, nullable=False, default=dict)
     payload_out: Mapped[dict[str, Any]] = mapped_column(JSONDict, nullable=False, default=dict)

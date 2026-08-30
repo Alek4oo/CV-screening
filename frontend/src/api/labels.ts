@@ -6,7 +6,7 @@
  * надпис, който звучи като присъда, върши същото с думи.
  */
 
-import type { DecisionOutcome, RoleStatus, RulesetStatus } from "./types";
+import type { DecisionOutcome, RulesetStatus } from "./types";
 
 export const OUTCOME_LABELS: Record<DecisionOutcome, string> = {
   pending: "For review",
@@ -23,12 +23,6 @@ export const OUTCOME_HINTS: Record<DecisionOutcome, string> = {
   advanced: "Moves forward in the process.",
   rejected: "Turned down by the recruiter.",
   on_hold: "Held — the decision is deferred, not a refusal.",
-};
-
-export const ROLE_STATUS_LABELS: Record<RoleStatus, string> = {
-  draft: "Draft",
-  open: "Open",
-  closed: "Closed",
 };
 
 export const RULESET_STATUS_LABELS: Record<RulesetStatus, string> = {

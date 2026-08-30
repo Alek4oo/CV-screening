@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { DecisionOutcome } from "../api/types";
-import { OUTCOME_LABELS, formatScore } from "../api/labels";
+import { OUTCOME_LABELS } from "../api/labels";
 
 export function OutcomeBadge({ outcome }: { outcome: DecisionOutcome }) {
   return <span className={`badge ${outcome}`}>{OUTCOME_LABELS[outcome]}</span>;
@@ -19,17 +19,6 @@ export function MinimumBadge({ meets }: { meets: boolean }) {
     <span className="badge ok">Meets minimum</span>
   ) : (
     <span className="badge warn">Minimum not met</span>
-  );
-}
-
-export function ScoreCell({ score }: { score: number }) {
-  return (
-    <div className="score-cell">
-      <span className="value">{formatScore(score)}</span>
-      <div className="score-track" aria-hidden="true">
-        <div style={{ width: `${Math.min(100, Math.max(0, score))}%` }} />
-      </div>
-    </div>
   );
 }
 

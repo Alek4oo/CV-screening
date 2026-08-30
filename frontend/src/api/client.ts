@@ -18,6 +18,7 @@ import type {
   RankingFilters,
   RankingList,
   Role,
+  RoleCreate,
   RoleStatus,
 } from "./types";
 
@@ -101,6 +102,31 @@ export const api = {
     return request<Role>(`/roles/${roleId}`);
   },
 
+  createRole(payload: RoleCreate): Promise<Role> {
+    return request<Role>("/roles", { method: "POST", body: JSON.stringify(payload) });
+  },
+
+  /**
+   * Трие позиция. Бекендът пази класираните: роля с класирания се връща с 409 и
+   * обяснение да се затвори вместо да се трие. Съобщението се показва както е —
+   * изгледът няма причина да го преразказва.
+   */
+  deleteRole(roleId: string): Promise<void> {
+    return request<void>(`/roles/${roleId}`, { method: "DELETE" });
+  },
+
+  /**
+   * Колко кандидата са класирани по тази позиция.
+   *
+   * Няма ендпойнт, който да даде броя за всички роли наведнъж, затова се пита
+   * класацията с limit=1: `total_unfiltered` се смята върху пълния набор, не
+   * върху върнатата страница, а тялото остава малко.
+   */
+  async countCandidates(roleId: string): Promise<number> {
+    const list = await request<RankingList>(`/roles/${roleId}/rankings${query({ limit: 1 })}`);
+    return list.total_unfiltered;
+  },
+
   listRankings(roleId: string, filters: RankingFilters = {}): Promise<RankingList> {
     return request<RankingList>(
       `/roles/${roleId}/rankings${query({
@@ -148,6 +174,22 @@ export const api = {
 
   getRanking(rankingId: string): Promise<RankingDetail> {
     return request<RankingDetail>(`/rankings/${rankingId}`);
+  },
+
+  /**
+   * Едно класиране, адресирано с роля и кандидат вместо с ranking_id.
+   *
+   * Екранът на позицията праща рекрутера към кандидат, а не към класиране —
+   * затова маршрутът носи двете id-та, които човек вижда. Класацията е
+   * единственото място, което свързва двойката с ranking_id, оттам и двата хода.
+   */
+  async getRankingForCandidate(roleId: string, candidateId: string): Promise<RankingDetail> {
+    const list = await request<RankingList>(`/roles/${roleId}/rankings${query({ limit: 200 })}`);
+    const row = list.rows.find((item) => item.candidate_id === candidateId);
+    if (!row) {
+      throw new ApiError(404, "This candidate has no ranking for this role.");
+    }
+    return request<RankingDetail>(`/rankings/${row.ranking_id}`);
   },
 
   getRankingAudit(rankingId: string): Promise<AuditEntry[]> {

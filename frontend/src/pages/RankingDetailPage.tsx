@@ -23,13 +23,29 @@ import { DecisionPanel } from "../components/DecisionPanel";
 import { CandidateProfileCard } from "../components/CandidateProfile";
 
 export function RankingDetailPage() {
-  const { rankingId = "" } = useParams();
+  // Two ways in. The position screen sends a recruiter to a candidate of a
+  // role, so its route carries the pair of ids a person actually sees; the
+  // older leaderboard links straight to a ranking. Both land here.
+  const { rankingId = "", roleId = "", candidateId = "" } = useParams();
   const [recruiter] = useRecruiter();
   const [decision, setDecision] = useState<Decision | null | undefined>(undefined);
 
-  const detail = useAsync(() => api.getRanking(rankingId), [rankingId]);
+  const detail = useAsync(
+    () =>
+      rankingId
+        ? api.getRanking(rankingId)
+        : api.getRankingForCandidate(roleId, candidateId),
+    [rankingId, roleId, candidateId],
+  );
+
+  // The audit is keyed by the ranking, which is only known once the detail has
+  // loaded — on the candidate route it is not in the URL.
+  const resolvedId = detail.data?.ranking_id ?? "";
   const [auditNonce, setAuditNonce] = useState(0);
-  const audit = useAsync(() => api.getRankingAudit(rankingId), [rankingId, auditNonce]);
+  const audit = useAsync(
+    () => (resolvedId ? api.getRankingAudit(resolvedId) : Promise.resolve([])),
+    [resolvedId, auditNonce],
+  );
 
   if (detail.error) return <Notice kind="error">{detail.error}</Notice>;
   if (!detail.data) return <Loading what="the candidate" />;
@@ -41,8 +57,8 @@ export function RankingDetailPage() {
   return (
     <>
       <div className="breadcrumb">
-        <Link to="/">Roles</Link> / <Link to={`/roles/${data.role.id}`}>{data.role.title}</Link> /{" "}
-        {data.candidate.full_name}
+        <Link to="/">Positions</Link> /{" "}
+        <Link to={`/roles/${data.role.id}`}>{data.role.title}</Link> / {data.candidate.full_name}
       </div>
 
       <div className="page-head">

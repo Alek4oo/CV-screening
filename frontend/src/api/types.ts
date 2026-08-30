@@ -32,6 +32,15 @@ export interface RoleRequirements {
   languages?: string[];
 }
 
+/** Тялото на POST /roles. Изискванията са по избор — роля може да е чернова. */
+export interface RoleCreate {
+  title: string;
+  description?: string | null;
+  requirements?: RoleRequirements;
+  status?: RoleStatus;
+  external_ref?: string | null;
+}
+
 export interface RulesetRef {
   id: string;
   version: string;
